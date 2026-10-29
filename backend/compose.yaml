@@ -191,6 +191,23 @@ services:
     profiles: [tools]
     depends_on: { api: { condition: service_healthy } }
 
+  web:
+    build:
+      context: ../frontend
+      target: runner
+    image: docintel-web:${IMAGE_TAG:-local}
+    environment:
+      NODE_ENV: production
+      API_INTERNAL_URL: http://api:8000
+      PORT: "3000"
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    ports: ["${WEB_PORT:-3000}:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+    logging: *logging
+    networks: [egress]
+
 networks:
   data:
     internal: true   # PostgreSQL, Redis, MinIO are never reachable from outside

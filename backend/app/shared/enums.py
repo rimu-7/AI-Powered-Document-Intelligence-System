@@ -26,6 +26,14 @@ class FileKind(StrEnum):
     CSV = "CSV"
 
     @property
+    def is_pdf(self) -> bool:
+        return self == FileKind.PDF
+
+    @property
+    def is_image(self) -> bool:
+        return self in (FileKind.IMAGE, FileKind.TIFF)
+
+    @property
     def is_spreadsheet(self) -> bool:
         return self in (FileKind.XLSX, FileKind.XLS, FileKind.CSV)
 

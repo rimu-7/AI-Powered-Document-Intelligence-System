@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.shared.enums import DocumentStatus, DocumentType, FileKind, PageStatus, PageType, ScanStatus, ValidationOutcome
 
@@ -69,6 +69,38 @@ class PageOut(BaseModel):
     processing_status: PageStatus
     error_code: str | None
     metadata_json: dict[str, Any]
+    page_width: float | None = None
+    page_height: float | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_dimensions(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            meta = data.get("metadata_json") or {}
+            if data.get("page_width") is None:
+                val = meta.get("width") or meta.get("page_width")
+                data["page_width"] = float(val) if val is not None else None
+            if data.get("page_height") is None:
+                val = meta.get("height") or meta.get("page_height")
+                data["page_height"] = float(val) if val is not None else None
+            return data
+        elif hasattr(data, "metadata_json"):
+            meta = getattr(data, "metadata_json", {}) or {}
+            w = getattr(data, "page_width", None)
+            h = getattr(data, "page_height", None)
+            if w is None and isinstance(meta, dict):
+                w = meta.get("width") or meta.get("page_width")
+            if h is None and isinstance(meta, dict):
+                h = meta.get("height") or meta.get("page_height")
+            d = {k: getattr(data, k) for k in (
+                "id", "page_number", "page_type", "character_count",
+                "ocr_engine", "ocr_confidence", "processing_status",
+                "error_code", "metadata_json"
+            ) if hasattr(data, k)}
+            d["page_width"] = float(w) if w is not None else None
+            d["page_height"] = float(h) if h is not None else None
+            return d
+        return data
 
 
 class PageText(BaseModel):

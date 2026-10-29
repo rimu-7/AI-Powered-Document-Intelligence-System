@@ -16,3 +16,6 @@ services:
     volumes: ["./app:/app/app:ro"]
     environment:
       LOG_JSON: "false"
+  web:
+    environment:
+      COOKIE_SECURE: "false"
