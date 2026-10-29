@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-10-29T04:38:00.513035+00:00",
+  "machine": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "processor": "arm64",
+    "cpu_count": 10
+  },
+  "note": "Single local Docker Compose stack; synthetic documents; results are specific to this machine and configuration.",
+  "runs": [
+    {
+      "file": "native-1000p.pdf",
+      "bytes": 14990586,
+      "state": "COMPLETED",
+      "pages_total": 1000,
+      "pages_completed": 1000,
+      "pages_failed": 0,
+      "upload_seconds": 9.98,
+      "end_to_end_seconds": 522.48,
+      "pages_per_second": 1.91,
+      "stage_seconds": {
+        "PREPROCESSING": 5.48,
+        "PARSING": 17.4,
+        "EXTRACTING": 436.18,
+        "VALIDATING": 0.65,
+        "INDEXING": 50.63
+      },
+      "invoices_extracted": 250,
+      "invoices_expected": 250
+    },
+    {
+      "file": "scanned-50p.pdf",
+      "bytes": 3753814,
+      "state": "REQUIRES_REVIEW",
+      "pages_total": 50,
+      "pages_completed": 50,
+      "pages_failed": 0,
+      "upload_seconds": 14.22,
+      "end_to_end_seconds": 147.34,
+      "pages_per_second": 0.34,
+      "stage_seconds": {
+        "PREPROCESSING": 2.38,
+        "PARSING": 20.61,
+        "EXTRACTING": 106.37,
+        "VALIDATING": 0.16,
+        "INDEXING": 2.24
+      },
+      "invoices_extracted": 50,
+      "invoices_expected": 50
+    }
+  ],
+  "peak_container_memory_mib": {
+    "docintel-api-1": 137.6,
+    "docintel-beat-1": 124.6,
+    "docintel-dispatcher-1": 68.5,
+    "docintel-minio-1": 232.7,
+    "docintel-postgres-1": 272.0,
+    "docintel-redis-1": 12.4,
+    "docintel-worker-extraction-1": 247.4,
+    "docintel-worker-indexing-1": 240.2,
+    "docintel-worker-ingestion-1": 246.1,
+    "docintel-worker-ocr-1": 573.1,
+    "docintel-worker-validation-1": 229.8
+  }
+}

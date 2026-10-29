@@ -1,0 +1,1608 @@
+{
+  "seed": 2026,
+  "generator": "evaluation/synthetic.py",
+  "files": [
+    {
+      "file": "native_01.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7001",
+          "invoice_date": "2026-06-13",
+          "payment_due_date": "2026-07-13",
+          "supplier_name": "ABC Trading Ltd",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "GB123456789",
+          "purchase_order_number": "PO-20580",
+          "currency": "GBP",
+          "subtotal": "79096.83",
+          "tax_amount": "0.00",
+          "total_amount": "79096.83",
+          "line_items": [
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "11",
+              "unit_price": "2259.43",
+              "line_total": "24853.73"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "4",
+              "unit_price": "2350.68",
+              "line_total": "9402.72"
+            },
+            {
+              "description": "Installation Labour",
+              "quantity": "10",
+              "unit_price": "1463.98",
+              "line_total": "14639.80"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "10",
+              "unit_price": "1441.05",
+              "line_total": "14410.50"
+            },
+            {
+              "description": "Training Workshop",
+              "quantity": "8",
+              "unit_price": "1973.76",
+              "line_total": "15790.08"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "native_02.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7002",
+          "invoice_date": "2026-05-28",
+          "payment_due_date": "2026-06-27",
+          "supplier_name": "ABC Trading Ltd",
+          "customer_name": "Umbrella Health plc",
+          "supplier_tax_id": "GB123456789",
+          "purchase_order_number": "PO-55568",
+          "currency": "GBP",
+          "subtotal": "2140.85",
+          "tax_amount": "107.04",
+          "total_amount": "2247.89",
+          "line_items": [
+            {
+              "description": "Paper A4 Box",
+              "quantity": "1",
+              "unit_price": "2140.85",
+              "line_total": "2140.85"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "native_03.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7003",
+          "invoice_date": "2026-07-12",
+          "payment_due_date": "2026-08-11",
+          "supplier_name": "Pacific Components Inc",
+          "customer_name": "Initech Services",
+          "supplier_tax_id": "94-1234567",
+          "purchase_order_number": "PO-62268",
+          "currency": "USD",
+          "subtotal": "36573.14",
+          "tax_amount": "1828.66",
+          "total_amount": "38401.80",
+          "line_items": [
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "11",
+              "unit_price": "205.06",
+              "line_total": "2255.66"
+            },
+            {
+              "description": "Training Workshop",
+              "quantity": "6",
+              "unit_price": "240.05",
+              "line_total": "1440.30"
+            },
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "9",
+              "unit_price": "770.77",
+              "line_total": "6936.93"
+            },
+            {
+              "description": "Freight Handling",
+              "quantity": "8",
+              "unit_price": "374.33",
+              "line_total": "2994.64"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "12",
+              "unit_price": "1883.03",
+              "line_total": "22596.36"
+            },
+            {
+              "description": "Installation Labour",
+              "quantity": "5",
+              "unit_price": "69.85",
+              "line_total": "349.25"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "native_04.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7004",
+          "invoice_date": "2026-09-13",
+          "payment_due_date": "2026-10-13",
+          "supplier_name": "Sunrise Foods Pvt Ltd",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "29ABCDE1234F1Z5",
+          "purchase_order_number": null,
+          "currency": "INR",
+          "subtotal": "-18979.47",
+          "tax_amount": "-0.00",
+          "total_amount": "-18979.47",
+          "line_items": [
+            {
+              "description": "Annual Software Licence",
+              "quantity": "9",
+              "unit_price": "2108.83",
+              "line_total": "-18979.47"
+            }
+          ],
+          "document_kind": "CREDIT_NOTE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "native_05.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7005",
+          "invoice_date": "2026-08-04",
+          "payment_due_date": "2026-09-03",
+          "supplier_name": "Pacific Components Inc",
+          "customer_name": "Umbrella Health plc",
+          "supplier_tax_id": "94-1234567",
+          "purchase_order_number": null,
+          "currency": "USD",
+          "subtotal": "34373.25",
+          "tax_amount": "6874.65",
+          "total_amount": "41257.90",
+          "line_items": [
+            {
+              "description": "Paper A4 Box",
+              "quantity": "9",
+              "unit_price": "1362.87",
+              "line_total": "12265.83"
+            },
+            {
+              "description": "Office Equipment",
+              "quantity": "10",
+              "unit_price": "593.57",
+              "line_total": "5935.70"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "1",
+              "unit_price": "1852.23",
+              "line_total": "1852.23"
+            },
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "11",
+              "unit_price": "273.89",
+              "line_total": "3012.79"
+            },
+            {
+              "description": "Training Workshop",
+              "quantity": "10",
+              "unit_price": "1130.67",
+              "line_total": "11306.70"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": true
+        }
+      ]
+    },
+    {
+      "file": "native_06.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7006",
+          "invoice_date": "2026-08-22",
+          "payment_due_date": "2026-09-21",
+          "supplier_name": "ABC Trading Ltd",
+          "customer_name": "Initech Services",
+          "supplier_tax_id": "GB123456789",
+          "purchase_order_number": "PO-95936",
+          "currency": "GBP",
+          "subtotal": "80785.20",
+          "tax_amount": "4039.26",
+          "total_amount": "84824.46",
+          "line_items": [
+            {
+              "description": "Paper A4 Box",
+              "quantity": "12",
+              "unit_price": "2441.53",
+              "line_total": "29298.36"
+            },
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "5",
+              "unit_price": "1472.47",
+              "line_total": "7362.35"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "11",
+              "unit_price": "811.42",
+              "line_total": "8925.62"
+            },
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "11",
+              "unit_price": "1320.69",
+              "line_total": "14527.59"
+            },
+            {
+              "description": "Training Workshop",
+              "quantity": "8",
+              "unit_price": "2114.98",
+              "line_total": "16919.84"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "7",
+              "unit_price": "535.92",
+              "line_total": "3751.44"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "native_07.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7007",
+          "invoice_date": "2026-08-23",
+          "payment_due_date": "2026-09-22",
+          "supplier_name": "Sunrise Foods Pvt Ltd",
+          "customer_name": "Initech Services",
+          "supplier_tax_id": "29ABCDE1234F1Z5",
+          "purchase_order_number": null,
+          "currency": "INR",
+          "subtotal": "46845.51",
+          "tax_amount": "2342.28",
+          "total_amount": "49187.79",
+          "line_items": [
+            {
+              "description": "Paper A4 Box",
+              "quantity": "6",
+              "unit_price": "2420.68",
+              "line_total": "14524.08"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "5",
+              "unit_price": "1820.73",
+              "line_total": "9103.65"
+            },
+            {
+              "description": "Paper A4 Box",
+              "quantity": "8",
+              "unit_price": "1345.25",
+              "line_total": "10762.00"
+            },
+            {
+              "description": "Paper A4 Box",
+              "quantity": "7",
+              "unit_price": "1467.33",
+              "line_total": "10271.31"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "1",
+              "unit_price": "2184.47",
+              "line_total": "2184.47"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "native_08.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7008",
+          "invoice_date": "2026-08-13",
+          "payment_due_date": "2026-09-12",
+          "supplier_name": "ABC Trading Ltd",
+          "customer_name": "Umbrella Health plc",
+          "supplier_tax_id": "GB123456789",
+          "purchase_order_number": null,
+          "currency": "GBP",
+          "subtotal": "-65567.59",
+          "tax_amount": "-13113.52",
+          "total_amount": "-78681.11",
+          "line_items": [
+            {
+              "description": "Training Workshop",
+              "quantity": "9",
+              "unit_price": "683.51",
+              "line_total": "-6151.59"
+            },
+            {
+              "description": "Paper A4 Box",
+              "quantity": "3",
+              "unit_price": "1121.14",
+              "line_total": "-3363.42"
+            },
+            {
+              "description": "Training Workshop",
+              "quantity": "8",
+              "unit_price": "2469.51",
+              "line_total": "-19756.08"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "11",
+              "unit_price": "703.52",
+              "line_total": "-7738.72"
+            },
+            {
+              "description": "Paper A4 Box",
+              "quantity": "6",
+              "unit_price": "258.39",
+              "line_total": "-1550.34"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "12",
+              "unit_price": "2250.62",
+              "line_total": "-27007.44"
+            }
+          ],
+          "document_kind": "CREDIT_NOTE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "native_09.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7009",
+          "invoice_date": "2026-01-01",
+          "payment_due_date": "2026-01-31",
+          "supplier_name": "ABC Trading Ltd",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "GB123456789",
+          "purchase_order_number": null,
+          "currency": "GBP",
+          "subtotal": "46158.74",
+          "tax_amount": "2307.94",
+          "total_amount": "48476.68",
+          "line_items": [
+            {
+              "description": "Installation Labour",
+              "quantity": "9",
+              "unit_price": "2448.64",
+              "line_total": "22037.76"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "10",
+              "unit_price": "2085.82",
+              "line_total": "20858.20"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "4",
+              "unit_price": "321.71",
+              "line_total": "1286.84"
+            },
+            {
+              "description": "Installation Labour",
+              "quantity": "1",
+              "unit_price": "1975.94",
+              "line_total": "1975.94"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": true
+        }
+      ]
+    },
+    {
+      "file": "native_10.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7010",
+          "invoice_date": "2026-03-21",
+          "payment_due_date": "2026-04-20",
+          "supplier_name": "Pacific Components Inc",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "94-1234567",
+          "purchase_order_number": null,
+          "currency": "USD",
+          "subtotal": "16868.17",
+          "tax_amount": "0.00",
+          "total_amount": "16868.17",
+          "line_items": [
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "11",
+              "unit_price": "1533.47",
+              "line_total": "16868.17"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "multi_invoice.pdf",
+      "kind": "multi_invoice_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7011",
+          "invoice_date": "2026-10-07",
+          "payment_due_date": "2026-11-06",
+          "supplier_name": "Nordic Office Supplies AB",
+          "customer_name": "Initech Services",
+          "supplier_tax_id": "SE556677889901",
+          "purchase_order_number": null,
+          "currency": "SEK",
+          "subtotal": "19426.78",
+          "tax_amount": "1942.68",
+          "total_amount": "21369.46",
+          "line_items": [
+            {
+              "description": "Paper A4 Box",
+              "quantity": "10",
+              "unit_price": "348.97",
+              "line_total": "3489.70"
+            },
+            {
+              "description": "Installation Labour",
+              "quantity": "12",
+              "unit_price": "1328.09",
+              "line_total": "15937.08"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        },
+        {
+          "invoice_number": "INV-2026-7012",
+          "invoice_date": "2026-06-06",
+          "payment_due_date": "2026-07-06",
+          "supplier_name": "Sunrise Foods Pvt Ltd",
+          "customer_name": "Initech Services",
+          "supplier_tax_id": "29ABCDE1234F1Z5",
+          "purchase_order_number": "PO-72393",
+          "currency": "INR",
+          "subtotal": "278635.52",
+          "tax_amount": "13931.78",
+          "total_amount": "292567.30",
+          "line_items": [
+            {
+              "description": "Annual Software Licence",
+              "quantity": "7",
+              "unit_price": "2123.11",
+              "line_total": "14861.77"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "9",
+              "unit_price": "2120.26",
+              "line_total": "19082.34"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "7",
+              "unit_price": "42.04",
+              "line_total": "294.28"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "7",
+              "unit_price": "2332.23",
+              "line_total": "16325.61"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "1",
+              "unit_price": "2190.75",
+              "line_total": "2190.75"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "7",
+              "unit_price": "2123.11",
+              "line_total": "14861.77"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "9",
+              "unit_price": "2120.26",
+              "line_total": "19082.34"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "7",
+              "unit_price": "42.04",
+              "line_total": "294.28"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "7",
+              "unit_price": "2332.23",
+              "line_total": "16325.61"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "1",
+              "unit_price": "2190.75",
+              "line_total": "2190.75"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "7",
+              "unit_price": "2123.11",
+              "line_total": "14861.77"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "9",
+              "unit_price": "2120.26",
+              "line_total": "19082.34"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "7",
+              "unit_price": "42.04",
+              "line_total": "294.28"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "7",
+              "unit_price": "2332.23",
+              "line_total": "16325.61"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "1",
+              "unit_price": "2190.75",
+              "line_total": "2190.75"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "7",
+              "unit_price": "2123.11",
+              "line_total": "14861.77"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "9",
+              "unit_price": "2120.26",
+              "line_total": "19082.34"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "7",
+              "unit_price": "42.04",
+              "line_total": "294.28"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "7",
+              "unit_price": "2332.23",
+              "line_total": "16325.61"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "1",
+              "unit_price": "2190.75",
+              "line_total": "2190.75"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "7",
+              "unit_price": "2123.11",
+              "line_total": "14861.77"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "9",
+              "unit_price": "2120.26",
+              "line_total": "19082.34"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "7",
+              "unit_price": "42.04",
+              "line_total": "294.28"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "7",
+              "unit_price": "2332.23",
+              "line_total": "16325.61"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "1",
+              "unit_price": "2190.75",
+              "line_total": "2190.75"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "7",
+              "unit_price": "2123.11",
+              "line_total": "14861.77"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        },
+        {
+          "invoice_number": "INV-2026-7013",
+          "invoice_date": "2026-06-05",
+          "payment_due_date": "2026-07-05",
+          "supplier_name": "Pacific Components Inc",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "94-1234567",
+          "purchase_order_number": null,
+          "currency": "USD",
+          "subtotal": "28116.51",
+          "tax_amount": "1405.83",
+          "total_amount": "29522.34",
+          "line_items": [
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "2",
+              "unit_price": "1309.34",
+              "line_total": "2618.68"
+            },
+            {
+              "description": "Paper A4 Box",
+              "quantity": "10",
+              "unit_price": "1626.63",
+              "line_total": "16266.30"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "3",
+              "unit_price": "1554.95",
+              "line_total": "4664.85"
+            },
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "4",
+              "unit_price": "1141.67",
+              "line_total": "4566.68"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "scanned_01.pdf",
+      "kind": "scanned_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7014",
+          "invoice_date": "2026-02-05",
+          "payment_due_date": "2026-03-07",
+          "supplier_name": "Blue River Consulting LLC",
+          "customer_name": "Example Corporation",
+          "supplier_tax_id": "84-7654321",
+          "purchase_order_number": null,
+          "currency": "USD",
+          "subtotal": "46235.77",
+          "tax_amount": "9247.15",
+          "total_amount": "55482.92",
+          "line_items": [
+            {
+              "description": "Annual Software Licence",
+              "quantity": "1",
+              "unit_price": "517.47",
+              "line_total": "517.47"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "3",
+              "unit_price": "123.58",
+              "line_total": "370.74"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "9",
+              "unit_price": "2445.44",
+              "line_total": "22008.96"
+            },
+            {
+              "description": "Office Equipment",
+              "quantity": "8",
+              "unit_price": "2280.65",
+              "line_total": "18245.20"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "4",
+              "unit_price": "1273.35",
+              "line_total": "5093.40"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "scanned_02.pdf",
+      "kind": "scanned_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7015",
+          "invoice_date": "2026-03-12",
+          "payment_due_date": "2026-04-11",
+          "supplier_name": "Sunrise Foods Pvt Ltd",
+          "customer_name": "Umbrella Health plc",
+          "supplier_tax_id": "29ABCDE1234F1Z5",
+          "purchase_order_number": "PO-55097",
+          "currency": "INR",
+          "subtotal": "12897.59",
+          "tax_amount": "1289.76",
+          "total_amount": "14187.35",
+          "line_items": [
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "3",
+              "unit_price": "1027.28",
+              "line_total": "3081.84"
+            },
+            {
+              "description": "Freight Handling",
+              "quantity": "7",
+              "unit_price": "1402.25",
+              "line_total": "9815.75"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "scanned_03.pdf",
+      "kind": "scanned_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7016",
+          "invoice_date": "2026-05-15",
+          "payment_due_date": "2026-06-14",
+          "supplier_name": "Nordic Office Supplies AB",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "SE556677889901",
+          "purchase_order_number": "PO-22205",
+          "currency": "SEK",
+          "subtotal": "36093.54",
+          "tax_amount": "1804.68",
+          "total_amount": "37898.22",
+          "line_items": [
+            {
+              "description": "Paper A4 Box",
+              "quantity": "7",
+              "unit_price": "759.11",
+              "line_total": "5313.77"
+            },
+            {
+              "description": "Paper A4 Box",
+              "quantity": "3",
+              "unit_price": "859.03",
+              "line_total": "2577.09"
+            },
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "8",
+              "unit_price": "1170.44",
+              "line_total": "9363.52"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "9",
+              "unit_price": "2093.24",
+              "line_total": "18839.16"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "scanned_04.pdf",
+      "kind": "scanned_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7017",
+          "invoice_date": "2026-06-19",
+          "payment_due_date": "2026-07-19",
+          "supplier_name": "Delta Logistics GmbH",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "DE811223344",
+          "purchase_order_number": "PO-84454",
+          "currency": "EUR",
+          "subtotal": "48337.08",
+          "tax_amount": "9667.42",
+          "total_amount": "58004.50",
+          "line_items": [
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "11",
+              "unit_price": "483.28",
+              "line_total": "5316.08"
+            },
+            {
+              "description": "Office Equipment",
+              "quantity": "6",
+              "unit_price": "2224.15",
+              "line_total": "13344.90"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "6",
+              "unit_price": "1478.25",
+              "line_total": "8869.50"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "10",
+              "unit_price": "2080.66",
+              "line_total": "20806.60"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "photo_01.png",
+      "kind": "png",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7018",
+          "invoice_date": "2026-04-20",
+          "payment_due_date": "2026-05-20",
+          "supplier_name": "Blue River Consulting LLC",
+          "customer_name": "Initech Services",
+          "supplier_tax_id": "84-7654321",
+          "purchase_order_number": null,
+          "currency": "USD",
+          "subtotal": "14384.59",
+          "tax_amount": "2876.92",
+          "total_amount": "17261.51",
+          "line_items": [
+            {
+              "description": "Freight Handling",
+              "quantity": "10",
+              "unit_price": "707.8",
+              "line_total": "7078.00"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "9",
+              "unit_price": "352.65",
+              "line_total": "3173.85"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "5",
+              "unit_price": "257.78",
+              "line_total": "1288.90"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "3",
+              "unit_price": "282.96",
+              "line_total": "848.88"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "1",
+              "unit_price": "1994.96",
+              "line_total": "1994.96"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "photo_02.png",
+      "kind": "png",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7019",
+          "invoice_date": "2026-06-10",
+          "payment_due_date": "2026-07-10",
+          "supplier_name": "Sunrise Foods Pvt Ltd",
+          "customer_name": "Umbrella Health plc",
+          "supplier_tax_id": "29ABCDE1234F1Z5",
+          "purchase_order_number": null,
+          "currency": "INR",
+          "subtotal": "3685.04",
+          "tax_amount": "184.25",
+          "total_amount": "3869.29",
+          "line_items": [
+            {
+              "description": "Installation Labour",
+              "quantity": "2",
+              "unit_price": "767.93",
+              "line_total": "1535.86"
+            },
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "3",
+              "unit_price": "688.82",
+              "line_total": "2066.46"
+            },
+            {
+              "description": "Freight Handling",
+              "quantity": "2",
+              "unit_price": "41.36",
+              "line_total": "82.72"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "photo_03.png",
+      "kind": "png",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7020",
+          "invoice_date": "2026-02-19",
+          "payment_due_date": "2026-03-21",
+          "supplier_name": "ABC Trading Ltd",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "GB123456789",
+          "purchase_order_number": null,
+          "currency": "GBP",
+          "subtotal": "17874.44",
+          "tax_amount": "893.72",
+          "total_amount": "18768.16",
+          "line_items": [
+            {
+              "description": "Office Equipment",
+              "quantity": "5",
+              "unit_price": "327.49",
+              "line_total": "1637.45"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "11",
+              "unit_price": "1476.09",
+              "line_total": "16236.99"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "photo_01.jpg",
+      "kind": "jpg",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7021",
+          "invoice_date": "2026-01-20",
+          "payment_due_date": "2026-02-19",
+          "supplier_name": "Sunrise Foods Pvt Ltd",
+          "customer_name": "Initech Services",
+          "supplier_tax_id": "29ABCDE1234F1Z5",
+          "purchase_order_number": null,
+          "currency": "INR",
+          "subtotal": "34409.39",
+          "tax_amount": "0.00",
+          "total_amount": "34409.39",
+          "line_items": [
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "10",
+              "unit_price": "570.27",
+              "line_total": "5702.70"
+            },
+            {
+              "description": "Installation Labour",
+              "quantity": "8",
+              "unit_price": "1122.05",
+              "line_total": "8976.40"
+            },
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "2",
+              "unit_price": "1804.52",
+              "line_total": "3609.04"
+            },
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "9",
+              "unit_price": "1791.25",
+              "line_total": "16121.25"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "photo_02.jpg",
+      "kind": "jpg",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7022",
+          "invoice_date": "2026-01-30",
+          "payment_due_date": "2026-03-01",
+          "supplier_name": "Pacific Components Inc",
+          "customer_name": "Globex Retail Ltd",
+          "supplier_tax_id": "94-1234567",
+          "purchase_order_number": null,
+          "currency": "USD",
+          "subtotal": "62303.80",
+          "tax_amount": "6230.38",
+          "total_amount": "68534.18",
+          "line_items": [
+            {
+              "description": "Training Workshop",
+              "quantity": "7",
+              "unit_price": "2307.71",
+              "line_total": "16153.97"
+            },
+            {
+              "description": "Office Equipment",
+              "quantity": "5",
+              "unit_price": "1827.68",
+              "line_total": "9138.40"
+            },
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "5",
+              "unit_price": "1911.11",
+              "line_total": "9555.55"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "5",
+              "unit_price": "2017.98",
+              "line_total": "10089.90"
+            },
+            {
+              "description": "Annual Software Licence",
+              "quantity": "6",
+              "unit_price": "1540.13",
+              "line_total": "9240.78"
+            },
+            {
+              "description": "Office Equipment",
+              "quantity": "9",
+              "unit_price": "902.8",
+              "line_total": "8125.20"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "scan_single.tiff",
+      "kind": "tiff",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7023",
+          "invoice_date": "2026-03-04",
+          "payment_due_date": "2026-04-03",
+          "supplier_name": "Nordic Office Supplies AB",
+          "customer_name": "Initech Services",
+          "supplier_tax_id": "SE556677889901",
+          "purchase_order_number": "PO-64433",
+          "currency": "SEK",
+          "subtotal": "4124.76",
+          "tax_amount": "206.24",
+          "total_amount": "4331.00",
+          "line_items": [
+            {
+              "description": "Office Equipment",
+              "quantity": "3",
+              "unit_price": "1374.92",
+              "line_total": "4124.76"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ]
+    },
+    {
+      "file": "scan_multipage.tiff",
+      "kind": "tiff_multipage",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7024",
+          "invoice_date": "2026-07-13",
+          "payment_due_date": "2026-08-12",
+          "supplier_name": "Delta Logistics GmbH",
+          "customer_name": "Example Corporation",
+          "supplier_tax_id": "DE811223344",
+          "purchase_order_number": "PO-12175",
+          "currency": "EUR",
+          "subtotal": "10671.02",
+          "tax_amount": "0.00",
+          "total_amount": "10671.02",
+          "line_items": [
+            {
+              "description": "Annual Software Licence",
+              "quantity": "11",
+              "unit_price": "580.57",
+              "line_total": "6386.27"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "3",
+              "unit_price": "1428.25",
+              "line_total": "4284.75"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        },
+        {
+          "invoice_number": "INV-2026-7025",
+          "invoice_date": "2026-10-05",
+          "payment_due_date": "2026-11-04",
+          "supplier_name": "Pacific Components Inc",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "94-1234567",
+          "purchase_order_number": null,
+          "currency": "USD",
+          "subtotal": "50717.90",
+          "tax_amount": "2535.90",
+          "total_amount": "53253.80",
+          "line_items": [
+            {
+              "description": "Annual Software Licence",
+              "quantity": "5",
+              "unit_price": "830.08",
+              "line_total": "4150.40"
+            },
+            {
+              "description": "Printer Toner Cartridge",
+              "quantity": "11",
+              "unit_price": "1561.21",
+              "line_total": "17173.31"
+            },
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "3",
+              "unit_price": "1454.6",
+              "line_total": "4363.80"
+            },
+            {
+              "description": "Office Equipment",
+              "quantity": "11",
+              "unit_price": "2275.49",
+              "line_total": "25030.39"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ],
+      "pages": 2
+    },
+    {
+      "file": "register.xlsx",
+      "kind": "xlsx",
+      "expect": "processed",
+      "invoices": [],
+      "register_rows": 6
+    },
+    {
+      "file": "register.xls",
+      "kind": "xls",
+      "expect": "processed",
+      "invoices": [],
+      "register_rows": 4
+    },
+    {
+      "file": "register.csv",
+      "kind": "csv",
+      "expect": "processed",
+      "invoices": [],
+      "register_rows": 5
+    },
+    {
+      "file": "compare_v1.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7032",
+          "invoice_date": "2026-01-02",
+          "payment_due_date": "2026-02-01",
+          "supplier_name": "Blue River Consulting LLC",
+          "customer_name": "Globex Retail Ltd",
+          "supplier_tax_id": "84-7654321",
+          "purchase_order_number": "PO-19585",
+          "currency": "USD",
+          "subtotal": "15029.03",
+          "tax_amount": "1502.90",
+          "total_amount": "16531.93",
+          "line_items": [
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "6",
+              "unit_price": "798.37",
+              "line_total": "4790.22"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "9",
+              "unit_price": "409.29",
+              "line_total": "3683.61"
+            },
+            {
+              "description": "Installation Labour",
+              "quantity": "10",
+              "unit_price": "655.52",
+              "line_total": "6555.20"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ],
+      "comparison_group": "pair",
+      "comparison_side": "left"
+    },
+    {
+      "file": "compare_v2.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7032",
+          "invoice_date": "2026-01-02",
+          "payment_due_date": "2026-02-01",
+          "supplier_name": "Blue River Consulting LLC",
+          "customer_name": "Globex Retail Ltd",
+          "supplier_tax_id": "84-7654321",
+          "purchase_order_number": "PO-19585",
+          "currency": "USD",
+          "subtotal": "15059.03",
+          "tax_amount": "1505.90",
+          "total_amount": "16564.93",
+          "line_items": [
+            {
+              "description": "Ergonomic Chair",
+              "quantity": "6",
+              "unit_price": "803.37",
+              "line_total": "4820.22"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "9",
+              "unit_price": "409.29",
+              "line_total": "3683.61"
+            },
+            {
+              "description": "Installation Labour",
+              "quantity": "10",
+              "unit_price": "655.52",
+              "line_total": "6555.20"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ],
+      "comparison_group": "pair",
+      "comparison_side": "right",
+      "expected_mismatched_records": 1
+    },
+    {
+      "file": "recon_invoice_1.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7033",
+          "invoice_date": "2026-05-15",
+          "payment_due_date": "2026-06-14",
+          "supplier_name": "Delta Logistics GmbH",
+          "customer_name": "Umbrella Health plc",
+          "supplier_tax_id": "DE811223344",
+          "purchase_order_number": null,
+          "currency": "EUR",
+          "subtotal": "57754.08",
+          "tax_amount": "2887.70",
+          "total_amount": "60641.78",
+          "line_items": [
+            {
+              "description": "Freight Handling",
+              "quantity": "11",
+              "unit_price": "313.14",
+              "line_total": "3444.54"
+            },
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "8",
+              "unit_price": "2389.19",
+              "line_total": "19113.52"
+            },
+            {
+              "description": "Paper A4 Box",
+              "quantity": "2",
+              "unit_price": "1461.45",
+              "line_total": "2922.90"
+            },
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "4",
+              "unit_price": "2177.23",
+              "line_total": "8708.92"
+            },
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "11",
+              "unit_price": "2142.2",
+              "line_total": "23564.20"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ],
+      "reconciliation_role": "pdf"
+    },
+    {
+      "file": "recon_invoice_2.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7034",
+          "invoice_date": "2026-06-09",
+          "payment_due_date": "2026-07-09",
+          "supplier_name": "Delta Logistics GmbH",
+          "customer_name": "Umbrella Health plc",
+          "supplier_tax_id": "DE811223344",
+          "purchase_order_number": null,
+          "currency": "EUR",
+          "subtotal": "16215.80",
+          "tax_amount": "0.00",
+          "total_amount": "16215.80",
+          "line_items": [
+            {
+              "description": "Cleaning Supplies",
+              "quantity": "4",
+              "unit_price": "446.29",
+              "line_total": "1785.16"
+            },
+            {
+              "description": "Network Switch 24-port",
+              "quantity": "7",
+              "unit_price": "1332.16",
+              "line_total": "9325.12"
+            },
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "6",
+              "unit_price": "850.92",
+              "line_total": "5105.52"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ],
+      "reconciliation_role": "pdf"
+    },
+    {
+      "file": "recon_invoice_3.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7035",
+          "invoice_date": "2026-06-28",
+          "payment_due_date": "2026-07-28",
+          "supplier_name": "Nordic Office Supplies AB",
+          "customer_name": "Globex Retail Ltd",
+          "supplier_tax_id": "SE556677889901",
+          "purchase_order_number": "PO-44924",
+          "currency": "SEK",
+          "subtotal": "30811.23",
+          "tax_amount": "0.00",
+          "total_amount": "30811.23",
+          "line_items": [
+            {
+              "description": "Annual Software Licence",
+              "quantity": "10",
+              "unit_price": "1005.41",
+              "line_total": "10054.10"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "3",
+              "unit_price": "1162.81",
+              "line_total": "3488.43"
+            },
+            {
+              "description": "Training Workshop",
+              "quantity": "10",
+              "unit_price": "1726.87",
+              "line_total": "17268.70"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ],
+      "reconciliation_role": "pdf"
+    },
+    {
+      "file": "recon_invoice_4.pdf",
+      "kind": "native_pdf",
+      "expect": "processed",
+      "invoices": [
+        {
+          "invoice_number": "INV-2026-7036",
+          "invoice_date": "2026-05-15",
+          "payment_due_date": "2026-06-14",
+          "supplier_name": "Delta Logistics GmbH",
+          "customer_name": "Stark Manufacturing",
+          "supplier_tax_id": "DE811223344",
+          "purchase_order_number": "PO-62591",
+          "currency": "EUR",
+          "subtotal": "10074.48",
+          "tax_amount": "1007.45",
+          "total_amount": "11081.93",
+          "line_items": [
+            {
+              "description": "Monitor 27 inch",
+              "quantity": "11",
+              "unit_price": "708",
+              "line_total": "7788.00"
+            },
+            {
+              "description": "Consulting Services",
+              "quantity": "6",
+              "unit_price": "381.08",
+              "line_total": "2286.48"
+            }
+          ],
+          "document_kind": "INVOICE",
+          "arithmetic_error": false
+        }
+      ],
+      "reconciliation_role": "pdf"
+    },
+    {
+      "file": "recon_register.xlsx",
+      "kind": "xlsx",
+      "expect": "processed",
+      "invoices": [],
+      "register_rows": 5,
+      "reconciliation_role": "register",
+      "expected_reconciliation": {
+        "matched_count": 2,
+        "mismatched_count": 1,
+        "missing_in_spreadsheet_count": 1,
+        "missing_in_pdf_count": 1,
+        "duplicate_count": 1
+      }
+    },
+    {
+      "file": "corrupt_truncated.pdf",
+      "kind": "corrupt",
+      "expect": "review",
+      "invoices": [],
+      "expected_error": "PDF_REPAIRED"
+    },
+    {
+      "file": "corrupt_encrypted.pdf",
+      "kind": "corrupt",
+      "expect": "failed",
+      "invoices": [],
+      "expected_error": "PDF_ENCRYPTED"
+    },
+    {
+      "file": "corrupt_fake.pdf",
+      "kind": "corrupt",
+      "expect": "rejected",
+      "invoices": [],
+      "expected_error": "CONTENT_SIGNATURE_MISMATCH"
+    },
+    {
+      "file": "corrupt_workbook.xlsx",
+      "kind": "corrupt",
+      "expect": "rejected",
+      "invoices": [],
+      "expected_error": "INVALID_WORKBOOK"
+    },
+    {
+      "file": "corrupt_image.png",
+      "kind": "corrupt",
+      "expect": "failed",
+      "invoices": [],
+      "expected_error": "IMAGE_MALFORMED"
+    }
+  ]
+}

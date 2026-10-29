@@ -1,0 +1,18 @@
+# Development overrides: publish data services on localhost and hot-reload the API.
+#   docker compose -f compose.yaml -f compose.dev.yaml up --build -d
+services:
+  postgres:
+    ports: ["127.0.0.1:5432:5432"]
+    networks: [data, egress]
+  redis:
+    ports: ["127.0.0.1:6379:6379"]
+    networks: [data, egress]
+  minio:
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
+    networks: [data, egress]
+  api:
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    read_only: false
+    volumes: ["./app:/app/app:ro"]
+    environment:
+      LOG_JSON: "false"

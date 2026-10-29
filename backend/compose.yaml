@@ -1,0 +1,202 @@
+# DocIntel AI — local deployment.
+#   1. make init          (creates/extends .env with generated dev secrets; never overwrites keys)
+#   2. docker compose up --build -d
+#   3. docker compose run --rm bootstrap   (optional: dev admin user + demo data)
+
+name: docintel
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "5" }
+
+x-app-env: &app-env
+  APP_ENV: ${APP_ENV:-development}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  LOG_JSON: "true"
+  DATABASE_URL: postgresql+asyncpg://docintel:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/docintel
+  REDIS_URL: redis://redis:6379/0
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_PUBLIC_ENDPOINT_URL: ${S3_PUBLIC_ENDPOINT_URL:-http://localhost:9000}
+  S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+  S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+  S3_BUCKET_ORIGINALS: docintel-originals
+  S3_BUCKET_ARTIFACTS: docintel-artifacts
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+  REGISTRATION_MODE: ${REGISTRATION_MODE:-open}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+  METRICS_TOKEN: ${METRICS_TOKEN:-}
+  EXTRACTION_PROVIDER: ${EXTRACTION_PROVIDER:-local}
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-local}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-local-hash-v1}
+  EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-32}
+  LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-8}
+  AI_EXTERNAL_TRANSMISSION_ENABLED: ${AI_EXTERNAL_TRANSMISSION_ENABLED:-false}
+  LLM_BASE_URL: ${LLM_BASE_URL:-https://api.mistral.ai/v1}
+  LLM_MODEL: ${LLM_MODEL:-open-mistral-nemo}
+  LLM_API_KEY: ${LLM_API_KEY:-${MISTRAL_API_KEY:-}}
+  ORIGINALS_STORAGE: ${ORIGINALS_STORAGE:-s3}
+  UPLOADTHING_TOKEN: ${UPLOADTHING_TOKEN:-}
+  UPLOADTHING_ACL: ${UPLOADTHING_ACL:-public-read}
+  UPLOADTHING_ALLOW_PUBLIC_FILES: ${UPLOADTHING_ALLOW_PUBLIC_FILES:-false}
+
+x-app: &app
+  image: docintel-ai:${IMAGE_TAG:-local}
+  build: { context: ., target: runtime }
+  environment: *app-env
+  restart: unless-stopped
+  logging: *logging
+  read_only: true
+  tmpfs: ["/tmp:size=2g,mode=1777"]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+  networks: [data, egress]
+  stop_grace_period: 60s
+
+x-worker-deps: &worker-deps
+  migrate: { condition: service_completed_successfully }
+  storage-init: { condition: service_completed_successfully }
+  redis: { condition: service_healthy }
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.1-pg17@sha256:3e8b3adfd27b5707128f60956f62a793c3c9326ea8cfaf0eab7adccb5d700b21
+    environment:
+      POSTGRES_USER: docintel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: docintel
+    command: ["postgres", "-c", "shared_buffers=256MB", "-c", "max_connections=200", "-c", "maintenance_work_mem=256MB"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docintel -d docintel"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    logging: *logging
+    networks: [data]
+    deploy: { resources: { limits: { cpus: "2", memory: 2g } } }
+
+  redis:
+    image: redis:7.4.6-alpine@sha256:3b73847e72874be07e6657b129a94761662b79bc0f679273757d4218573b2a98
+    # AOF persistence reduces lost broker messages on restart; the recovery
+    # sweeper re-publishes anything lost anyway (PostgreSQL is authoritative).
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    logging: *logging
+    networks: [data]
+    deploy: { resources: { limits: { cpus: "1", memory: 512m } } }
+
+  minio:
+    image: chainguard/minio@sha256:e70b2b1e74d79457f808710483bd726ff364529ca30736eaa15a6ab547d3a5a7
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes: [miniodata:/data]
+    healthcheck:
+      # The image has bash but no curl/grep: speak HTTP over /dev/tcp.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /minio/health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && read -r status <&3 && [[ $$status == *' 200 '* ]]"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    logging: *logging
+    networks: [data]
+    deploy: { resources: { limits: { cpus: "1", memory: 1g } } }
+
+  migrate:
+    <<: *app
+    command: ["migrate"]
+    restart: "no"
+    depends_on: { postgres: { condition: service_healthy } }
+
+  storage-init:
+    <<: *app
+    command: ["python", "-m", "scripts.bootstrap", "--buckets-only"]
+    restart: "no"
+    depends_on: { minio: { condition: service_healthy } }
+
+  api:
+    <<: *app
+    command: ["api"]
+    ports: ["${API_PORT:-8000}:8000"]
+    depends_on: *worker-deps
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3).status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    deploy: { resources: { limits: { cpus: "2", memory: 1g } } }
+
+  dispatcher:
+    <<: *app
+    command: ["dispatcher"]
+    depends_on: *worker-deps
+    deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
+
+  beat:
+    <<: *app
+    command: ["beat"]
+    depends_on: *worker-deps
+    deploy: { resources: { limits: { cpus: "0.25", memory: 256m } } }
+
+  worker-ingestion:
+    <<: *app
+    command: ["worker"]
+    environment: { <<: *app-env, QUEUES: "ingestion,maintenance", CONCURRENCY: "2", WORKER_NAME: ingestion, SERVICE_NAME: docintel-worker-ingestion }
+    depends_on: *worker-deps
+    deploy: { resources: { limits: { cpus: "2", memory: 2g } } }
+
+  worker-ocr:
+    <<: *app
+    command: ["worker"]
+    # OCR is CPU and memory heavy: keep concurrency low and scale replicas instead.
+    environment: { <<: *app-env, QUEUES: "ocr", CONCURRENCY: "${OCR_CONCURRENCY:-2}", WORKER_NAME: ocr, SERVICE_NAME: docintel-worker-ocr, OMP_THREAD_LIMIT: "1" }
+    depends_on: *worker-deps
+    deploy: { resources: { limits: { cpus: "${OCR_CPUS:-2}", memory: 3g } } }
+
+  worker-extraction:
+    <<: *app
+    command: ["worker"]
+    # Bounded by LLM provider rate limits, not CPU: threads are fine here.
+    environment: { <<: *app-env, QUEUES: "extraction", CONCURRENCY: "4", POOL: threads, WORKER_NAME: extraction, SERVICE_NAME: docintel-worker-extraction }
+    depends_on: *worker-deps
+    deploy: { resources: { limits: { cpus: "1", memory: 1g } } }
+
+  worker-validation:
+    <<: *app
+    command: ["worker"]
+    environment: { <<: *app-env, QUEUES: "validation,comparison", CONCURRENCY: "2", WORKER_NAME: validation, SERVICE_NAME: docintel-worker-validation }
+    depends_on: *worker-deps
+    deploy: { resources: { limits: { cpus: "1", memory: 1g } } }
+
+  worker-indexing:
+    <<: *app
+    command: ["worker"]
+    environment: { <<: *app-env, QUEUES: "indexing", CONCURRENCY: "2", WORKER_NAME: indexing, SERVICE_NAME: docintel-worker-indexing }
+    depends_on: *worker-deps
+    deploy: { resources: { limits: { cpus: "1", memory: 1g } } }
+
+  bootstrap:
+    <<: *app
+    command: ["bootstrap"]
+    restart: "no"
+    profiles: [tools]
+    depends_on: { api: { condition: service_healthy } }
+
+networks:
+  data:
+    internal: true   # PostgreSQL, Redis, MinIO are never reachable from outside
+  egress: {}         # API port publishing and outbound LLM calls
+
+volumes:
+  pgdata: {}
+  redisdata: {}
+  miniodata: {}
