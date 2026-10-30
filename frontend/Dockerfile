@@ -27,7 +27,12 @@ RUN pnpm run build
 FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 WORKDIR /app
-RUN addgroup -S -g 10001 docintel && adduser -S -u 10001 -G docintel -h /app docintel
+# The server runs with plain `node`: drop npm/npx/corepack (and their bundled
+# dependencies) and apply Alpine security updates.
+RUN apk upgrade --no-cache \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+ && addgroup -S -g 10001 docintel && adduser -S -u 10001 -G docintel -h /app docintel
 COPY --from=build --chown=docintel:docintel /app/public ./public
 COPY --from=build --chown=docintel:docintel /app/.next/standalone ./
 COPY --from=build --chown=docintel:docintel /app/.next/static ./.next/static

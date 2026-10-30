@@ -16,9 +16,13 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-ins
 
 # --- runtime base: OS packages shared by runtime and test images ----------------------
 FROM ${PYTHON_IMAGE} AS runtime-base
+# upgrade: pull Debian security fixes newer than the base image. pip is removed:
+# dependencies are installed by uv into /opt/venv, nothing uses pip at runtime.
 RUN apt-get update \
+ && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng tesseract-ocr-osd libglib2.0-0 libgomp1 tini ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
+ && python -m pip uninstall -y pip \
  && groupadd --system --gid 10001 docintel \
  && useradd --system --uid 10001 --gid docintel --home-dir /app --shell /usr/sbin/nologin docintel
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/opt/venv/bin:$PATH \
