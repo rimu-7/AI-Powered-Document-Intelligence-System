@@ -1,131 +1,51 @@
-# DocIntel AI — Document Intelligence Backend
+# DocIntel AI — backend
 
-Backend for an AI-powered document intelligence system. It ingests invoices,
-receipts, scanned PDFs (around 1,000 pages), images and spreadsheets;
-extracts structured invoice data with an LLM without inventing values;
-validates the numbers deterministically; cross-verifies PDF↔PDF and
-PDF↔Excel/CSV; flags records for manual review; and makes everything
-searchable (keyword and semantic) through a REST API.
+FastAPI API, Celery workers, outbox dispatcher, scheduler and migrations for
+DocIntel AI. One codebase and one Docker image; the process type is chosen by
+the container command ([`docker/entrypoint.sh`](docker/entrypoint.sh)):
+`api`, `worker`, `dispatcher`, `beat`, `migrate`, `bootstrap`.
 
-**Stack:** FastAPI · Celery + Redis · PostgreSQL 17 + pgvector · PyMuPDF ·
-Tesseract + OpenCV · openpyxl / xlrd · Mistral (LLM + embeddings) ·
-UploadThing or S3/MinIO for original files · Docker Compose.
-FastAPI is used instead of Node.js/NestJS because the whole document stack
-(OCR, PDF, spreadsheets) is Python, so API and workers share one codebase.
-Rationale for each choice: [docs/architecture.md](docs/architecture.md#technology-choices).
+System overview, setup and the full command list are in the
+[root README](../README.md); design details in
+[docs/architecture.md](../docs/architecture.md) and the API in
+[docs/api.md](../docs/api.md).
 
-## Assignment coverage
+## Working on the backend
 
-| Task | Where |
+Requirements: Python 3.12 and [uv](https://docs.astral.sh/uv/). Commands run
+from this directory (or use the root `make` targets).
+
+```bash
+uv sync --frozen                     # dependencies into .venv
+uv run pytest tests/unit             # fast unit tests, no Docker
+uv run pytest                        # + integration tests (Testcontainers starts PostgreSQL, Redis, MinIO)
+uv run ruff check . && uv run ruff format --check . && uv run mypy app
+```
+
+To run the API while editing, use `make dev` at the root: the API runs in
+Docker with hot reload from `app/`, and PostgreSQL (5432), Redis (6379) and
+MinIO (9000) are published on localhost for tools and debugging.
+
+## Layout
+
+| Path | Contents |
 |---|---|
-| 1. Document processing (PDF, JPG, PNG, TIFF, XLSX, XLS, CSV; multi-page, multi-sheet, poor quality, corrupted) | `app/modules/parsing/`, pipeline in `app/workers/pipeline.py` |
-| 2. AI extraction (invoice no., date, supplier, customer, subtotal, tax, total, currency, line items → JSON, nulls instead of guesses) | `app/modules/extraction/` |
-| 3. Validation (missing fields, wrong numbers, duplicates, subtotal/tax/lines/total consistency, review flags) | `app/modules/validation/` |
-| 4. REST API (upload, status, results, search, corrections, failed-job reprocessing; background jobs) | `app/api/v1/`, [docs/api.md](docs/api.md) |
-| 5. Database + search (metadata, text, results, errors, history; keyword + semantic) | [docs/database.md](docs/database.md), `app/modules/search/` |
-| 6. Frontend | not part of this repository (planned separately; the API is ready for it, see [docs/api.md](docs/api.md)) |
-| 7. Tests + evaluation (measured accuracy, time, success/failure rates) | `tests/`, [docs/testing.md](docs/testing.md), [docs/evaluation.md](docs/evaluation.md) |
-| Cross-verification PDF↔PDF and PDF↔Excel | `app/modules/comparison/` |
+| `app/api/` | HTTP layer: dependencies, idempotency, health, `/api/v1` routers |
+| `app/core/` | settings, logging, errors, middleware, database, security, metrics |
+| `app/modules/` | domain modules: documents, parsing, extraction, validation, comparison, reviews, search, jobs, identity, auditing |
+| `app/workers/` | Celery app, stage handlers, dispatcher, local file cache |
+| `app/shared/` | money, dates, text, enums |
+| `alembic/` | migrations (`uv run alembic revision -m "…"`) |
+| `tests/` | `unit/`, `api/`, `workers/`, `security/`, `integration/` |
+| `evaluation/` | labeled dataset, generator, evaluation runner, measured results |
+| `scripts/` | `init_env`, `bootstrap`, `create_admin`, `smoke_test`, `benchmark`, `reindex`, `export_openapi` |
 
-Deliverables: architecture diagram → [docs/architecture.md](docs/architecture.md) ·
-database schema → [docs/database.md](docs/database.md) · test results →
-[docs/testing.md](docs/testing.md) · evaluation report →
-[docs/evaluation.md](docs/evaluation.md) · AI prompts and disclosure →
-[docs/ai-disclosure.md](docs/ai-disclosure.md).
+## Conventions
 
-## Setup
-
-Requirements: Docker 24+ with Compose v2, Python 3 (for `make init`), and
-optionally [uv](https://docs.astral.sh/uv/) for running tests on the host.
-
-```bash
-cp .env.example .env            # or: make init  (generates local secrets, never overwrites existing keys)
-# Put your keys in .env:
-#   MISTRAL_API_KEY=...         → LLM extraction + semantic search (without it: local rules + lexical vectors)
-#   UPLOADTHING_TOKEN=...       → with ORIGINALS_STORAGE=uploadthing, original files go to UploadThing
-make init                       # fills in any missing secrets
-docker compose up --build -d    # API at http://localhost:8000, interactive docs at /docs
-make smoke                      # end-to-end check (upload → OCR → extraction → search → reconciliation)
-```
-
-Services: `api`, `dispatcher`, `beat`, five worker pools (`worker-ingestion`,
-`worker-ocr`, `worker-extraction`, `worker-validation`, `worker-indexing`),
-`postgres`, `redis`, `minio`, plus the one-off `migrate` and `storage-init`.
-Scale a stage with `docker compose up -d --scale worker-ocr=4`.
-
-## Using the API
-
-```bash
-API=http://localhost:8000/api/v1
-curl -s -X POST $API/auth/register -H 'Content-Type: application/json' \
-  -d '{"organization_name":"Acme","email":"me@acme.test","password":"Very-Strong-Pass-1","full_name":"Me"}'
-TOKEN=$(curl -s -X POST $API/auth/login -H 'Content-Type: application/json' \
-  -d '{"email":"me@acme.test","password":"Very-Strong-Pass-1"}' | jq -r .access_token)
-H="Authorization: Bearer $TOKEN"
-
-# Upload: multipart (many files), raw body, or direct-to-UploadThing (see docs/api.md)
-curl -s -X POST $API/documents/upload -H "$H" -F files=@invoice.pdf -F files=@register.xlsx
-curl -s -X POST "$API/documents/upload/raw?filename=scan.png" -H "$H" --data-binary @scan.png
-
-curl -s $API/jobs/<job_id> -H "$H"                      # status + progress_percent
-curl -s $API/documents/<document_id>/invoices -H "$H"   # extracted invoices (JSON)
-curl -s $API/documents/<document_id>/validations -H "$H"
-curl -s "$API/search/keyword?q=office%20chairs" -H "$H"
-curl -s -X POST $API/search/semantic -H "$H" -H 'Content-Type: application/json' -d '{"query":"ergonomic seating"}'
-curl -s -X PATCH $API/invoices/<invoice_id>/corrections -H "$H" -H 'Content-Type: application/json' \
-  -d '{"expected_version":1,"reason":"misread total","changes":[{"field_path":"total_amount","value":"1100.00"}]}'
-curl -s -X POST $API/jobs/<failed_job_id>/retry -H "$H"
-```
-
-Full endpoint list and examples: [docs/api.md](docs/api.md).
-
-## Configuration
-
-All settings are environment variables (`app/core/config.py`, documented in
-`.env.example`). The most important ones:
-
-| Variable | Default | Meaning |
-|---|---|---|
-| `EXTRACTION_PROVIDER` | `hosted` with a key, else `local` | `hosted` = Mistral LLM; `local` = deterministic rules |
-| `EMBEDDING_PROVIDER` / `EMBEDDING_MODEL` | `hosted` / `mistral-embed` | semantic search vectors (1024-dim) |
-| `LLM_MODEL`, `LLM_MAX_CONCURRENCY` | `open-mistral-nemo`, `8` | model; max concurrent LLM calls (global, all workers) |
-| `EXTRACTION_CROSS_CHECK` | `true` | verify LLM output against the rule-based extractor (see architecture) |
-| `ORIGINALS_STORAGE` | `s3` | `uploadthing` stores raw originals in UploadThing |
-| `PAGE_BATCH_SIZE` | `10` | pages per OCR task |
-| `UPLOAD_MAX_FILE_BYTES`, `MAX_PDF_PAGES` | 200 MB, 1,500 | limits |
-| `VALIDATION_AMOUNT_TOLERANCE` | `0.01` | absolute rounding tolerance |
-| `REGISTRATION_MODE` | `open` locally | set `disabled` in production; create admins with `python -m scripts.create_admin` |
-
-## Tests and evaluation
-
-```bash
-make test-unit       # fast, no Docker
-make test            # unit + integration (starts PostgreSQL/Redis/MinIO with Testcontainers)
-make test-docker     # whole suite inside the image (includes OCR tests)
-make lint            # ruff + mypy
-make evaluate        # labeled dataset → running stack → accuracy / time / success & failure rates
-make benchmark       # 1,000-page PDF throughput
-```
-
-Latest results: [docs/testing.md](docs/testing.md) and [docs/evaluation.md](docs/evaluation.md).
-
-## Operations
-
-`make logs` · `make migrate` · `make backup-db` / `make restore-db FILE=…` ·
-`docker compose exec api python -m scripts.reindex` (re-embed after changing
-the embedding model) · `GET /health/ready` (database, Redis, storage) ·
-`GET /metrics` (Prometheus, bearer `METRICS_TOKEN`) · `GET /api/v1/admin/dead-letter`
-(failed jobs).
-
-## Project structure
-
-```
-app/            API, domain modules, workers           alembic/      migrations
-tests/          unit, api, workers, security, integration
-evaluation/     labeled dataset, generator, evaluation runner, results
-scripts/        init_env, create_admin, bootstrap, smoke_test, benchmark, reindex
-docs/           architecture, database, api, testing, evaluation, ai-disclosure
-compose.yaml    local / single-host deployment     Dockerfile   one image for all processes
-```
-
-PyMuPDF and MinIO are AGPL-licensed; review licensing before distribution.
+* Money is `Decimal` end to end (`NUMERIC(20,4)` in the database); floats are rejected.
+* Enumerations are `StrEnum`s in `app/shared/enums.py`, stored as `VARCHAR`
+  with a `CHECK` constraint. A new member needs a migration.
+* Every background stage is idempotent and commits its result together with
+  the next stage's outbox event.
+* After changing a request or response model, run `make api-types` at the
+  root so the frontend's types follow; CI fails on drift.

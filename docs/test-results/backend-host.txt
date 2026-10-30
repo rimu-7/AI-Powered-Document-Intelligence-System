@@ -1,6 +1,7 @@
-......................s................................................. [ 40%]
-........................................................................ [ 81%]
-.................................                                        [100%]
+.......................s................................................ [ 32%]
+........................................................................ [ 65%]
+........................................................................ [ 97%]
+.....                                                                    [100%]
 ================================ tests coverage ================================
 _______________ coverage: platform darwin, python 3.12.7-final-0 _______________
 
@@ -15,7 +16,8 @@ app/api/v1/__init__.py                             0      0   100%
 app/api/v1/admin.py                               67      2    97%
 app/api/v1/auth.py                                33      0   100%
 app/api/v1/comparisons.py                        151     21    86%
-app/api/v1/documents.py                          198     41    79%
+app/api/v1/config.py                              25      0   100%
+app/api/v1/documents.py                          222     47    79%
 app/api/v1/invoices.py                           102     15    85%
 app/api/v1/jobs.py                                51      5    90%
 app/api/v1/reviews.py                             55      3    95%
@@ -49,26 +51,28 @@ app/modules/comparison/service.py                137     11    92%
 app/modules/documents/__init__.py                  0      0   100%
 app/modules/documents/fingerprint.py              96      9    91%
 app/modules/documents/models.py                  121      0   100%
-app/modules/documents/schemas.py                  94      0   100%
+app/modules/documents/page_images.py              68     15    78%
+app/modules/documents/schemas.py                 121      9    93%
 app/modules/documents/service.py                  36      0   100%
-app/modules/documents/storage.py                 154     26    83%
+app/modules/documents/storage.py                 166     23    86%
 app/modules/documents/upload_service.py          211     24    89%
 app/modules/documents/uploadthing.py             172     47    73%
 app/modules/extraction/__init__.py                 0      0   100%
 app/modules/extraction/api_schemas.py             95      0   100%
 app/modules/extraction/confidence.py              14      0   100%
-app/modules/extraction/crosscheck.py              71     11    85%
-app/modules/extraction/grounding.py               85      5    94%
+app/modules/extraction/crosscheck.py              73     11    85%
+app/modules/extraction/currency_context.py        30      1    97%
+app/modules/extraction/grounding.py              145      5    97%
 app/modules/extraction/models.py                  85      0   100%
-app/modules/extraction/normalization.py          122     25    80%
+app/modules/extraction/normalization.py          123     25    80%
 app/modules/extraction/prompts.py                  7      0   100%
 app/modules/extraction/providers/__init__.py       0      0   100%
 app/modules/extraction/providers/base.py          30      0   100%
 app/modules/extraction/providers/factory.py       17      5    71%
-app/modules/extraction/providers/fixture.py      231     29    87%
+app/modules/extraction/providers/fixture.py      252     23    91%
 app/modules/extraction/providers/hosted.py       147     45    69%
-app/modules/extraction/schemas.py                152      1    99%
-app/modules/extraction/service.py                206     35    83%
+app/modules/extraction/schemas.py                153      1    99%
+app/modules/extraction/service.py                208     35    83%
 app/modules/identity/__init__.py                   0      0   100%
 app/modules/identity/models.py                    34      0   100%
 app/modules/identity/schemas.py                   52      0   100%
@@ -77,7 +81,7 @@ app/modules/jobs/__init__.py                       0      0   100%
 app/modules/jobs/lifecycle.py                    171     17    90%
 app/modules/jobs/models.py                        61      0   100%
 app/modules/jobs/outbox.py                        45      1    98%
-app/modules/jobs/recovery.py                     118     16    86%
+app/modules/jobs/recovery.py                     123     18    85%
 app/modules/jobs/schemas.py                       47      0   100%
 app/modules/jobs/service.py                       89     10    89%
 app/modules/jobs/state.py                         27      0   100%
@@ -94,7 +98,7 @@ app/modules/parsing/spreadsheet_parser.py        259     45    83%
 app/modules/reviews/__init__.py                    0      0   100%
 app/modules/reviews/models.py                     35      0   100%
 app/modules/reviews/schemas.py                    64      0   100%
-app/modules/reviews/service.py                   280     95    66%
+app/modules/reviews/service.py                   280     90    68%
 app/modules/search/__init__.py                     0      0   100%
 app/modules/search/embeddings.py                  83     29    65%
 app/modules/search/indexing.py                    90      4    96%
@@ -103,12 +107,12 @@ app/modules/search/service.py                    163     18    89%
 app/modules/validation/__init__.py                 0      0   100%
 app/modules/validation/financial.py               31      3    90%
 app/modules/validation/models.py                  27      0   100%
-app/modules/validation/rules.py                  272     36    87%
+app/modules/validation/rules.py                  277     37    87%
 app/modules/validation/service.py                 96      7    93%
 app/shared/__init__.py                             0      0   100%
 app/shared/dates.py                               53      2    96%
-app/shared/enums.py                              160      0   100%
-app/shared/money.py                              117     11    91%
+app/shared/enums.py                              222      2    99%
+app/shared/money.py                              127     11    91%
 app/shared/pagination.py                          14      0   100%
 app/shared/text.py                                39      2    95%
 app/workers/__init__.py                            0      0   100%
@@ -118,5 +122,5 @@ app/workers/files.py                              49      8    84%
 app/workers/pipeline.py                          384     48    88%
 app/workers/tasks.py                              97     22    77%
 ------------------------------------------------------------------
-TOTAL                                           8137   1032    87%
-176 passed, 1 skipped in 27.88s
+TOTAL                                           8492   1054    88%
+220 passed, 1 skipped in 32.75s

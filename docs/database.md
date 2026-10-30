@@ -1,7 +1,7 @@
 # Database schema
 
 PostgreSQL 17 + pgvector 0.8. The schema is created only by Alembic migrations
-(`alembic/versions/`); a test asserts that models and migrated schema match.
+(`backend/alembic/versions/`); a test asserts that models and migrated schema match.
 
 ## Entity-relationship diagram
 

@@ -1,0 +1,28 @@
+<testsuites id="" name="" tests="9" failures="0" skipped="0" errors="0" time="4.4323879999999996">
+<testsuite name="auth.setup.ts" timestamp="2026-10-30T03:56:04.301Z" hostname="setup" tests="1" failures="0" skipped="0" time="0.283" errors="0">
+<testcase name="sign in" classname="auth.setup.ts" time="0.283">
+</testcase>
+</testsuite>
+<testsuite name="a11y.spec.ts" timestamp="2026-10-30T03:56:04.301Z" hostname="public" tests="2" failures="0" skipped="0" time="3.661" errors="0">
+<testcase name="Accessibility (axe-core) › login page meets WCAG 2.1 AA accessibility in light mode" classname="a11y.spec.ts" time="1.795">
+</testcase>
+<testcase name="Accessibility (axe-core) › register page meets WCAG 2.1 AA accessibility" classname="a11y.spec.ts" time="1.866">
+</testcase>
+</testsuite>
+<testsuite name="auth.spec.ts" timestamp="2026-10-30T03:56:04.301Z" hostname="public" tests="3" failures="0" skipped="0" time="3.756" errors="0">
+<testcase name="Authentication flow › redirects unauthenticated users to /login with next parameter" classname="auth.spec.ts" time="1.358">
+</testcase>
+<testcase name="Authentication flow › displays validation errors when submitting empty form" classname="auth.spec.ts" time="1.683">
+</testcase>
+<testcase name="Authentication flow › shows registration link if registration mode is open" classname="auth.spec.ts" time="0.715">
+</testcase>
+</testsuite>
+<testsuite name="workflow.spec.ts" timestamp="2026-10-30T03:56:04.301Z" hostname="signed-in" tests="3" failures="0" skipped="0" time="3.674" errors="0">
+<testcase name="DocIntel Application Workflows › can access app shell, navigate sidebar, and open command menu" classname="workflow.spec.ts" time="0.959">
+</testcase>
+<testcase name="DocIntel Application Workflows › search page updates url state on input" classname="workflow.spec.ts" time="1.52">
+</testcase>
+<testcase name="DocIntel Application Workflows › compare wizard lets user toggle between modes" classname="workflow.spec.ts" time="1.195">
+</testcase>
+</testsuite>
+</testsuites>

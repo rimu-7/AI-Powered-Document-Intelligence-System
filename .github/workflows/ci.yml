@@ -1,0 +1,122 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions: { contents: read }
+concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend: ["backend/**", ".github/workflows/ci.yml"]
+            frontend: ["frontend/**", ".github/workflows/ci.yml"]
+
+  backend-lint:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.11.6", enable-cache: true, cache-dependency-glob: backend/uv.lock }
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy app
+
+  backend-test:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: backend } }
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.1-pg17
+        env: { POSTGRES_USER: docintel, POSTGRES_PASSWORD: docintel, POSTGRES_DB: docintel_test }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U docintel" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7.4.6-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.11.6", enable-cache: true, cache-dependency-glob: backend/uv.lock }
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng tesseract-ocr-osd
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=ci -e MINIO_ROOT_PASSWORD=ci-secret-key \
+            chainguard/minio@sha256:e70b2b1e74d79457f808710483bd726ff364529ca30736eaa15a6ab547d3a5a7 server /data --address :9000
+          for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/live && break; sleep 1; done
+      - run: uv sync --frozen
+      - name: Tests (unit + integration + OCR)
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://docintel:docintel@localhost:5432/docintel_test
+          TEST_REDIS_URL: redis://localhost:6379/0
+          TEST_S3_ENDPOINT_URL: http://localhost:9000
+          TEST_S3_ACCESS_KEY: ci
+          TEST_S3_SECRET_KEY: ci-secret-key
+        run: uv run pytest --cov=app --cov-report=xml --cov-report=term
+      - uses: actions/upload-artifact@v4
+        with: { name: backend-coverage, path: backend/coverage.xml }
+
+  backend-audit:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.11.6" }
+      - run: uv export --frozen --no-dev --format requirements-txt > requirements.txt
+      - run: uvx pip-audit==2.9.0 -r requirements.txt --strict
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { package_json_file: frontend/package.json }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm, cache-dependency-path: frontend/pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run format:check
+      - run: pnpm run typecheck
+      - run: pnpm run test
+      - run: pnpm audit --prod --audit-level high
+      - run: pnpm run build
+        env: { NEXT_TELEMETRY_DISABLED: 1 }
+
+  # The frontend's generated API types must match the backend's OpenAPI schema.
+  api-contract:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.11.6", enable-cache: true, cache-dependency-glob: backend/uv.lock }
+      - uses: pnpm/action-setup@v4
+        with: { package_json_file: frontend/package.json }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm, cache-dependency-path: frontend/pnpm-lock.yaml }
+      - run: cd backend && uv sync --frozen --no-dev
+      - run: cd frontend && pnpm install --frozen-lockfile
+      - run: make api-types
+      - name: Fail on drift
+        run: git diff --exit-code frontend/lib/api/schema.d.ts || (echo "::error::API types are out of date. Run 'make api-types' and commit." && exit 1)

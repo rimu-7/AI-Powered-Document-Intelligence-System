@@ -1,5 +1,6 @@
-# Development overrides: publish data services on localhost and hot-reload the API.
-#   docker compose -f compose.yaml -f compose.dev.yaml up --build -d
+# Development overrides (`make dev`): publish the data services on localhost and
+# hot-reload the API from ./backend/app. For UI work run `make web-dev` instead of
+# the web container (Next.js dev server with fast refresh on the host).
 services:
   postgres:
     ports: ["127.0.0.1:5432:5432"]
@@ -13,9 +14,6 @@ services:
   api:
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     read_only: false
-    volumes: ["./app:/app/app:ro"]
+    volumes: ["./backend/app:/app/app:ro"]
     environment:
       LOG_JSON: "false"
-  web:
-    environment:
-      COOKIE_SECURE: "false"

@@ -43,7 +43,7 @@ COPY --chown=docintel:docintel alembic ./alembic
 COPY --chown=docintel:docintel app ./app
 COPY --chown=docintel:docintel scripts ./scripts
 COPY --chown=docintel:docintel evaluation/__init__.py evaluation/synthetic.py ./evaluation/
-COPY --chown=docintel:docintel infra/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chown=docintel:docintel docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 0755 /usr/local/bin/entrypoint.sh && mkdir -p /tmp/docintel /tmp/prometheus && chown docintel:docintel /tmp/docintel /tmp/prometheus
 USER 10001:10001
 EXPOSE 8000 9100

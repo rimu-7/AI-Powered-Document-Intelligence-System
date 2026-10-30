@@ -42,7 +42,7 @@ default in production: `API_DOCS_ENABLED`). Every response carries
 |---|---|
 | Auth | `POST /auth/register` (only when `REGISTRATION_MODE=open`; creates org + ADMIN) · `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout[?all_sessions=true]` · `GET /auth/me` |
 | Users | `GET /users` · `POST /users` · `PATCH /users/{id}` (role / active) · `POST /users/{id}/revoke-sessions` |
-| Documents | `POST /documents/upload` (multipart) · `POST /documents/upload/raw?filename=` (raw body) · `POST /documents/direct-uploads` → `PUT upload_url` (UploadThing) → `POST /documents/direct-uploads/{id}/complete` · `GET /documents` (filters: status, document_type, file_kind, filename, created range) · `GET /documents/{id}` · `GET /documents/{id}/download[?mode=presigned]` · `GET /documents/{id}/pages` · `GET /documents/{id}/text?page_from&page_to` · `GET /documents/{id}/tables` · `GET /documents/{id}/tables/{table_id}/rows` · `GET /documents/{id}/spreadsheet/mapping-suggestions` · `DELETE /documents/{id}` · `POST /documents/{id}/reprocess` |
+| Documents | `POST /documents/upload` (multipart) · `POST /documents/upload/raw?filename=` (raw body) · `POST /documents/direct-uploads` → `PUT upload_url` (UploadThing) → `POST /documents/direct-uploads/{id}/complete` · `GET /documents` (filters: status, document_type, file_kind, filename, created range) · `GET /documents/{id}` · `GET /documents/{id}/download[?mode=presigned]` · `GET /documents/{id}/pages` (incl. `page_width`/`page_height`) · `GET /documents/{id}/pages/{n}/image[?width=]` (WebP, widths rounded up to 240/640/1024/1600, cached, ETag) · `GET /documents/{id}/text?page_from&page_to` · `GET /documents/{id}/tables` · `GET /documents/{id}/tables/{table_id}/rows` · `GET /documents/{id}/spreadsheet/mapping-suggestions` · `DELETE /documents/{id}` · `POST /documents/{id}/reprocess` |
 | Jobs | `GET /jobs` · `GET /jobs/{id}` (stage history, tasks by state, failed tasks with error history) · `GET /documents/{id}/jobs` · `POST /jobs/{id}/retry` · `POST /jobs/{id}/cancel` |
 | Extraction | `GET /documents/{id}/extractions` · `GET /extractions/{id}` · `GET /documents/{id}/invoices[?include_superseded=true]` · `GET /invoices/{id}` (incl. `machine_values`, evidence, alternatives) · `GET /invoices/{id}/line-items` · `GET /invoices/{id}/history` |
 | Validation | `GET /documents/{id}/validations` · `GET /invoices/{id}/validations` · `POST /invoices/{id}/revalidate` |
@@ -51,6 +51,7 @@ default in production: `API_DOCS_ENABLED`). Every response carries
 | Reconciliation | `POST /reconciliations` · `GET /reconciliations/{id}` · `GET /reconciliations/{id}/findings[?records_only=true&finding_status=…]` · `GET /reconciliations/{id}/export.csv` |
 | Search | `GET /search/keyword` · `POST /search/semantic` · `POST /search/hybrid` |
 | Admin | `GET /admin/stats` · `GET /admin/dead-letter` · `GET /admin/audit-events` |
+| Config | `GET /config/public` (no auth: upload limits, allowed extensions, registration mode, direct upload availability, `currencies` as `{code, minor_units}`) |
 | Ops (no prefix) | `GET /health/live` · `GET /health/ready` · `GET /health/startup` · `GET /metrics` (bearer `METRICS_TOKEN` when set) |
 
 ## Corrections
@@ -111,6 +112,9 @@ from both sides.
 * Filters (unknown filters → 422): `date_from`, `date_to`, `supplier`,
   `currency`, `amount_min`, `amount_max`, `file_kinds`, `document_types`,
   `processing_statuses`, `validation_outcomes`. Empty query → `422 EMPTY_QUERY`.
+  `currency` must be a `CurrencyCode` (e.g. `USD`); anything else → 422.
+* Invoice `currency` is `CurrencyCode | null`; `currency_raw` is the text as
+  printed (`"$"`). `null` means "not confirmed", never a default currency.
 
 ## curl walkthrough
 

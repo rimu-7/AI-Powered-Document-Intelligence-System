@@ -4,9 +4,15 @@
 
 ```mermaid
 flowchart LR
-    client["Client<br/>(React/Next.js, curl)"] -->|"REST /api/v1 (JWT)"| api
+    browser["Browser"] -->|"same origin · httpOnly cookies"| web
+    scripts["Scripts / integrations<br/>(curl, smoke test, evaluation)"] -->|"REST /api/v1 (JWT)"| api
 
-    subgraph app["Application (one image, independently scaled processes)"]
+    subgraph frontend["Frontend image"]
+        web["Next.js web app<br/>UI + BFF (/bff): sessions, CSRF, streaming proxy"]
+    end
+    web -->|"REST /api/v1 · Bearer added server-side"| api
+
+    subgraph app["Backend image (one image, independently scaled processes)"]
         api["FastAPI API<br/>upload · status · results · search<br/>corrections · reprocessing"]
         dispatcher["Outbox dispatcher"]
         beat["Scheduler (recovery sweeps)"]
@@ -46,6 +52,7 @@ flowchart LR
 
 | Requirement | Choice | Why |
 |---|---|---|
+| Web app | **Next.js 16** + shadcn/ui, TanStack Query | Server-side BFF keeps tokens out of the browser; one origin for the UI; details in [frontend.md](frontend.md) |
 | Backend API | **FastAPI** (instead of NestJS) | The whole document stack (PyMuPDF, Tesseract, OpenCV, openpyxl, xlrd) is Python; one language for API and workers means one domain model and no cross-service contracts. Async I/O, Pydantic validation, OpenAPI for free |
 | Background jobs | **Celery + Redis** (the Python equivalent of BullMQ) | Separate queues per stage so OCR, LLM and indexing scale independently |
 | Database | **PostgreSQL 17** | Relational integrity for financial data, `NUMERIC` money, JSONB for evidence, transactions for the outbox |
@@ -83,9 +90,18 @@ work units and reaches 100% only at a successful end state.
 * Values are normalized deterministically (no model arithmetic). Ambiguous
   dates (`03/04/2026`), ambiguous separators (`1,234`) and ambiguous currency
   symbols (`$`, `¥`) are **flagged, never guessed**.
+* Currency is the `CurrencyCode` enum (55 ISO 4217 codes, `backend/app/shared/enums.py`)
+  everywhere: extraction output, the `invoice_records.currency` CHECK constraint,
+  corrections, search filters, comparison options and the API schema. A bare
+  `$` with no country evidence stays `null` with `currency_raw: "$"` and an
+  `INVALID_CURRENCY` warning listing the candidate codes; it is never defaulted.
+  Adding a code means adding its minor units and a migration for the constraint.
 * **Grounding**: each value must be found on the cited page; the matching line
   and its bounding box become the evidence. Values that cannot be found are
   marked `UNSUPPORTED` and raise `UNGROUNDED_VALUE`.
+* Values printed over several lines of one column (an address next to an
+  "Invoice details" column) are matched cell by cell, so they are grounded
+  without accepting text that mixes columns.
 * Missing information is `null`.
 * **Two independent extractors, cross-checked.** The deterministic layout
   extractor (about 0.2 s per document) runs next to the LLM on every
@@ -112,7 +128,7 @@ document) · `TOTAL_MISMATCH` (subtotal − discount + shipping + tax) ·
 `NEGATIVE_AMOUNT` (credit-note aware) · `DUPLICATE_INVOICE` (same supplier +
 number in another document) · `DUPLICATE_FILE` (SHA-256) ·
 `UNGROUNDED_VALUE` · `AMBIGUOUS_VALUE` · `LOW_EXTRACTION_CONFIDENCE` ·
-`UNSUPPORTED_CALCULATION` · `PDF_REPAIRED` (damaged PDF recovered, content
+`UNSUPPORTED_CALCULATION` · `CURRENCY_INFERRED` (INFO: `$`/`¥`/`kr` resolved from the supplier's printed address, e.g. "CA 94107" → USD; never without that evidence) · `PDF_REPAIRED` (damaged PDF recovered, content
 may be incomplete) · `EXTRACTION_FALLBACK` · `EXTRACTOR_DISAGREEMENT`.
 Absolute tolerance (0.01), never percentages. Any
 ERROR, or a review-relevant warning, sets the invoice to `REQUIRES_REVIEW` and
@@ -182,24 +198,57 @@ evidence from both sides (page + bounding box, or sheet + row + cell).
   URL, never exposed by the API). Use a paid plan with `UPLOADTHING_ACL=private`
   for confidential documents, or keep originals in private S3/MinIO.
 
-## Code layout
+## Deployment topology
+
+Two images, one Compose file ([`compose.yaml`](../compose.yaml)):
+
+| Image | Built from | Runs as |
+|---|---|---|
+| `docintel-backend` | [`backend/Dockerfile`](../backend/Dockerfile) (Python 3.12, Tesseract) | `api`, `dispatcher`, `beat`, five worker pools, one-off `migrate` / `storage-init` / `bootstrap` — same image, different command ([`entrypoint.sh`](../backend/docker/entrypoint.sh)) |
+| `docintel-frontend` | [`frontend/Dockerfile`](../frontend/Dockerfile) (Node 24, Next.js standalone) | `web` |
+
+Why two images and not one or eleven: the backend processes share one
+codebase and domain model, so one image guarantees they always run the same
+version; the frontend has a different runtime, dependency tree and release
+cadence, so it gets its own small image (no Python or OCR packages in the web
+container, no Node in the workers). Each Compose service is still a separate
+container, so every stage scales on its own (`--scale worker-ocr=4`).
+
+Both images are multi-stage (dependencies → `test` stage used by CI and
+`make test-docker` → minimal `runtime`), run as non-root UID 10001 with a
+read-only root filesystem, dropped capabilities and health checks.
+
+Networks: `data` is internal (PostgreSQL, Redis, MinIO are unreachable from
+outside); `egress` carries the published ports (web 3000, API 8000), web → API
+traffic and outbound LLM / UploadThing calls. Startup order is enforced by
+health checks: databases → `migrate` + `storage-init` → API and workers → web.
+
+## Repository layout
 
 ```
-app/
-  api/            HTTP layer: auth deps, idempotency, health, v1 routers
-  core/           settings, logging, errors, middleware, DB engines, security, metrics
-  modules/
-    documents/    upload, file checks, storage (S3 + UploadThing), models
-    parsing/      PDF, OCR, image/TIFF, layout, spreadsheets, classification, segmentation
-    extraction/   schemas, prompts, providers (Mistral / rules), normalization, grounding
-    validation/   arithmetic, rules, duplicates
-    comparison/   matching, PDF↔PDF, PDF↔spreadsheet, column mapping, CSV export
-    reviews/      corrections, approval, rejection, review queue
-    search/       chunking, embeddings, keyword / semantic / hybrid search
-    jobs/         state machines, outbox, leases, recovery, job API
-    identity/, auditing/
-  workers/        Celery app, stage handlers, dispatcher, file cache
-  shared/         money, dates, text normalization, enums
-alembic/          migrations          tests/        unit, api, workers, security, integration
-evaluation/       labeled dataset, generator, end-to-end evaluation     scripts/   ops tools
+compose.yaml        whole system        compose.dev.yaml   dev overrides (API hot reload, data ports)
+Makefile            every task (make help)                   .env.example       all settings, one file
+backend/
+  app/
+    api/            HTTP layer: auth deps, idempotency, health, v1 routers
+    core/           settings, logging, errors, middleware, DB engines, security, metrics
+    modules/
+      documents/    upload, file checks, storage (S3 + UploadThing), page images, models
+      parsing/      PDF, OCR, image/TIFF, layout, spreadsheets, classification, segmentation
+      extraction/   schemas, prompts, providers (Mistral / rules), normalization, grounding
+      validation/   arithmetic, rules, duplicates
+      comparison/   matching, PDF↔PDF, PDF↔spreadsheet, column mapping, CSV export
+      reviews/      corrections, approval, rejection, review queue
+      search/       chunking, embeddings, keyword / semantic / hybrid search
+      jobs/         state machines, outbox, leases, recovery, job API
+      identity/, auditing/
+    workers/        Celery app, stage handlers, dispatcher, file cache
+    shared/         money, dates, text normalization, enums
+  alembic/          migrations
+  tests/            unit, api, workers, security, integration
+  evaluation/       labeled dataset, generator, end-to-end evaluation, results
+  scripts/          init_env, create_admin, bootstrap, smoke_test, benchmark, reindex, export_openapi
+  docker/           container entrypoint
+frontend/           Next.js app — layout in frontend.md
+docs/               architecture, api, database, frontend, testing, evaluation, AI disclosure
 ```

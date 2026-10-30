@@ -1,7 +1,9 @@
-# DocIntel AI — local deployment.
-#   1. make init          (creates/extends .env with generated dev secrets; never overwrites keys)
-#   2. docker compose up --build -d
-#   3. docker compose run --rm bootstrap   (optional: dev admin user + demo data)
+# DocIntel AI — the whole system on one host.
+#   make init   create/extend .env with generated local secrets (never overwrites keys)
+#   make up     build both images and start everything → http://localhost:3000
+# Two images: backend (API, workers, dispatcher, beat, migrations — one image,
+# different commands) and frontend (Next.js UI + BFF). Data services stay on an
+# internal network; only the web app and the API are published.
 
 name: docintel
 
@@ -40,8 +42,8 @@ x-app-env: &app-env
   UPLOADTHING_ALLOW_PUBLIC_FILES: ${UPLOADTHING_ALLOW_PUBLIC_FILES:-false}
 
 x-app: &app
-  image: docintel-ai:${IMAGE_TAG:-local}
-  build: { context: ., target: runtime }
+  image: docintel-backend:${IMAGE_TAG:-local}
+  build: { context: ./backend, target: runtime }
   environment: *app-env
   restart: unless-stopped
   logging: *logging
@@ -192,26 +194,27 @@ services:
     depends_on: { api: { condition: service_healthy } }
 
   web:
-    build:
-      context: ../frontend
-      target: runner
-    image: docintel-web:${IMAGE_TAG:-local}
+    image: docintel-frontend:${IMAGE_TAG:-local}
+    build: { context: ./frontend, target: runtime }
     environment:
-      NODE_ENV: production
-      API_INTERNAL_URL: http://api:8000
-      PORT: "3000"
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      API_INTERNAL_URL: http://api:8000     # the BFF calls the API over the compose network
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:${WEB_PORT:-3000}}  # CSRF origin check
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}  # true behind HTTPS
     ports: ["${WEB_PORT:-3000}:3000"]
-    depends_on:
-      api: { condition: service_healthy }
+    depends_on: { api: { condition: service_healthy } }
     restart: unless-stopped
     logging: *logging
+    read_only: true
+    tmpfs: ["/tmp:mode=1777", "/app/.next/cache:mode=1777"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
     networks: [egress]
+    deploy: { resources: { limits: { cpus: "1", memory: 512m } } }
 
 networks:
   data:
     internal: true   # PostgreSQL, Redis, MinIO are never reachable from outside
-  egress: {}         # API port publishing and outbound LLM calls
+  egress: {}         # published ports, web → API, outbound LLM / UploadThing calls
 
 volumes:
   pgdata: {}

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="50" failures="0" errors="0" time="2.240280042">
+    <testsuite name="tests/components/command-menu.test.tsx" timestamp="2026-10-30T03:56:03.963Z" hostname="MacBook-Air.local" tests="1" failures="0" errors="0" skipped="0" time="0.35974325">
+        <testcase classname="tests/components/command-menu.test.tsx" name="CommandMenu &gt; opens with Ctrl/Cmd+K and lists navigation commands" time="0.3505445">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/currency-select.test.tsx" timestamp="2026-10-30T03:56:03.963Z" hostname="MacBook-Air.local" tests="4" failures="0" errors="0" skipped="0" time="0.7447025">
+        <testcase classname="tests/components/currency-select.test.tsx" name="CurrencySelect component &gt; renders trigger with placeholder when value is null" time="0.195257292">
+        </testcase>
+        <testcase classname="tests/components/currency-select.test.tsx" name="CurrencySelect component &gt; renders trigger with formatted code and display name when value is provided" time="0.020723042">
+        </testcase>
+        <testcase classname="tests/components/currency-select.test.tsx" name="CurrencySelect component &gt; shows suggested candidates first when candidates prop is provided" time="0.307168667">
+        </testcase>
+        <testcase classname="tests/components/currency-select.test.tsx" name="CurrencySelect component &gt; calls onChange with null when Not set is selected" time="0.210209833">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/dropdown-menu.test.tsx" timestamp="2026-10-30T03:56:03.964Z" hostname="MacBook-Air.local" tests="2" failures="0" errors="0" skipped="0" time="0.317084917">
+        <testcase classname="tests/components/dropdown-menu.test.tsx" name="DropdownMenu and DropdownMenuLabel &gt; renders standalone DropdownMenuLabel without throwing MenuGroupContext error" time="0.253718958">
+        </testcase>
+        <testcase classname="tests/components/dropdown-menu.test.tsx" name="DropdownMenu and DropdownMenuLabel &gt; renders DropdownMenuLabel inside DropdownMenuGroup without errors" time="0.050155917">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/empty-error-state.test.tsx" timestamp="2026-10-30T03:56:03.964Z" hostname="MacBook-Air.local" tests="2" failures="0" errors="0" skipped="0" time="0.130056875">
+        <testcase classname="tests/components/empty-error-state.test.tsx" name="EmptyState component &gt; renders title, description and calls onAction when button clicked" time="0.091387375">
+        </testcase>
+        <testcase classname="tests/components/empty-error-state.test.tsx" name="ErrorState component &gt; renders error message, request ID and calls onRetry" time="0.029368291">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/invoice-review.test.tsx" timestamp="2026-10-30T03:56:03.964Z" hostname="MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.368538333">
+        <testcase classname="tests/components/invoice-review.test.tsx" name="InvoiceReviewPage component &gt; renders invoice workspace details from MSW" time="0.09281275">
+        </testcase>
+        <testcase classname="tests/components/invoice-review.test.tsx" name="InvoiceReviewPage component &gt; handles edit mode toggle and form fields" time="0.067753167">
+        </testcase>
+        <testcase classname="tests/components/invoice-review.test.tsx" name="InvoiceReviewPage component &gt; sends null for currency when Not set is selected in edit form" time="0.131146625">
+        </testcase>
+        <testcase classname="tests/components/invoice-review.test.tsx" name="InvoiceReviewPage component &gt; renders suggested candidates for INVALID_CURRENCY and clicking one activates edit mode" time="0.041481333">
+        </testcase>
+        <testcase classname="tests/components/invoice-review.test.tsx" name="InvoiceReviewPage component &gt; opens approve dialog and displays blocking validation issues warning" time="0.032297417">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/money.test.tsx" timestamp="2026-10-30T03:56:03.964Z" hostname="MacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.09436075">
+        <testcase classname="tests/components/money.test.tsx" name="Money component &gt; renders amount with unconfirmed badge when currency is null" time="0.074211542">
+        </testcase>
+        <testcase classname="tests/components/money.test.tsx" name="Money component &gt; renders confirmed currency without unconfirmed badge" time="0.004407791">
+        </testcase>
+        <testcase classname="tests/components/money.test.tsx" name="Money component &gt; handles null value gracefully" time="0.005538">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/status-badge.test.tsx" timestamp="2026-10-30T03:56:03.964Z" hostname="MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.029650333">
+        <testcase classname="tests/components/status-badge.test.tsx" name="StatusBadge component &gt; renders null when status is empty" time="0.009071917">
+        </testcase>
+        <testcase classname="tests/components/status-badge.test.tsx" name="StatusBadge component &gt; renders blue styling for RUNNING" time="0.010696">
+        </testcase>
+        <testcase classname="tests/components/status-badge.test.tsx" name="StatusBadge component &gt; renders green styling for APPROVED" time="0.001769875">
+        </testcase>
+        <testcase classname="tests/components/status-badge.test.tsx" name="StatusBadge component &gt; renders red styling for FAILED" time="0.0019395">
+        </testcase>
+        <testcase classname="tests/components/status-badge.test.tsx" name="StatusBadge component &gt; formats snake_case into Title Case words" time="0.002020375">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/upload-sheet.test.tsx" timestamp="2026-10-30T03:56:03.965Z" hostname="MacBook-Air.local" tests="1" failures="0" errors="0" skipped="0" time="0.08939625">
+        <testcase classname="tests/components/upload-sheet.test.tsx" name="UploadSheet component &gt; renders upload sheet dialog when open" time="0.086108291">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/unit/csrf-origin.test.ts" timestamp="2026-10-30T03:56:03.965Z" hostname="MacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.004855375">
+        <testcase classname="tests/unit/csrf-origin.test.ts" name="isTrustedOrigin &gt; accepts the app origin and requests without an Origin header" time="0.000769583">
+        </testcase>
+        <testcase classname="tests/unit/csrf-origin.test.ts" name="isTrustedOrigin &gt; accepts plain localhost in development, compared by hostname" time="0.000225542">
+        </testcase>
+        <testcase classname="tests/unit/csrf-origin.test.ts" name="isTrustedOrigin &gt; rejects look-alike and foreign origins" time="0.000185209">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/unit/errors.test.ts" timestamp="2026-10-30T03:56:03.965Z" hostname="MacBook-Air.local" tests="4" failures="0" errors="0" skipped="0" time="0.005212458">
+        <testcase classname="tests/unit/errors.test.ts" name="Error Normalization &gt; preserves ApiError instance" time="0.000821125">
+        </testcase>
+        <testcase classname="tests/unit/errors.test.ts" name="Error Normalization &gt; normalizes Axios error with backend envelope" time="0.000405584">
+        </testcase>
+        <testcase classname="tests/unit/errors.test.ts" name="Error Normalization &gt; normalizes generic Error instances" time="0.000102125">
+        </testcase>
+        <testcase classname="tests/unit/errors.test.ts" name="Error Normalization &gt; extracts specific detail messages from 422 validation errors" time="0.0001085">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/unit/format.test.ts" timestamp="2026-10-30T03:56:03.965Z" hostname="MacBook-Air.local" tests="8" failures="0" errors="0" skipped="0" time="0.014408042">
+        <testcase classname="tests/unit/format.test.ts" name="Format Utilities &gt; formatMoney &gt; formats standard amounts without converting to float arithmetic" time="0.009245125">
+        </testcase>
+        <testcase classname="tests/unit/format.test.ts" name="Format Utilities &gt; formatMoney &gt; handles null or empty values gracefully" time="0.000192709">
+        </testcase>
+        <testcase classname="tests/unit/format.test.ts" name="Format Utilities &gt; formatMoney &gt; formats with null currency as decimal and never produces EUR" time="0.000228375">
+        </testcase>
+        <testcase classname="tests/unit/format.test.ts" name="Format Utilities &gt; formatMoney &gt; respects minor units from config or default currency mapping" time="0.00016">
+        </testcase>
+        <testcase classname="tests/unit/format.test.ts" name="Format Utilities &gt; formatBytes &gt; formats zero bytes" time="0.000108125">
+        </testcase>
+        <testcase classname="tests/unit/format.test.ts" name="Format Utilities &gt; formatBytes &gt; formats megabytes and gigabytes properly" time="0.000097875">
+        </testcase>
+        <testcase classname="tests/unit/format.test.ts" name="Format Utilities &gt; formatDate &gt; formats valid ISO timestamp" time="0.000787375">
+        </testcase>
+        <testcase classname="tests/unit/format.test.ts" name="Format Utilities &gt; formatDate &gt; returns dash for falsy dates" time="0.000062833">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/unit/invalidation.test.ts" timestamp="2026-10-30T03:56:03.966Z" hostname="MacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.007463208">
+        <testcase classname="tests/unit/invalidation.test.ts" name="invalidation map &gt; invalidates document list, jobs, and admin stats on upload_documents" time="0.001781333">
+        </testcase>
+        <testcase classname="tests/unit/invalidation.test.ts" name="invalidation map &gt; invalidates invoice detail, document, reviews on correct_invoice" time="0.000381334">
+        </testcase>
+        <testcase classname="tests/unit/invalidation.test.ts" name="invalidation map &gt; invalidates user list and sessions on revoke_user_sessions" time="0.00014675">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/unit/keys.test.ts" timestamp="2026-10-30T03:56:03.967Z" hostname="MacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.011639834">
+        <testcase classname="tests/unit/keys.test.ts" name="Query Keys Factory &gt; produces deterministic document query keys" time="0.002160916">
+        </testcase>
+        <testcase classname="tests/unit/keys.test.ts" name="Query Keys Factory &gt; produces hierarchical invoice keys" time="0.000494834">
+        </testcase>
+        <testcase classname="tests/unit/keys.test.ts" name="Query Keys Factory &gt; produces review queue and search keys" time="0.000271084">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/unit/refresh-lock.test.ts" timestamp="2026-10-30T03:56:03.967Z" hostname="MacBook-Air.local" tests="1" failures="0" errors="0" skipped="0" time="0.057812667">
+        <testcase classname="tests/unit/refresh-lock.test.ts" name="Token Refresh Single Flight &gt; deduplicates concurrent refresh invocations into a single call" time="0.052899167">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/unit/snippet.test.ts" timestamp="2026-10-30T03:56:03.967Z" hostname="MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.00535525">
+        <testcase classname="tests/unit/snippet.test.ts" name="Snippet parsing &gt; returns empty array for empty string" time="0.000938209">
+        </testcase>
+        <testcase classname="tests/unit/snippet.test.ts" name="Snippet parsing &gt; handles text without matches" time="0.000201167">
+        </testcase>
+        <testcase classname="tests/unit/snippet.test.ts" name="Snippet parsing &gt; handles single matched phrase surrounded by « »" time="0.000153083">
+        </testcase>
+        <testcase classname="tests/unit/snippet.test.ts" name="Snippet parsing &gt; handles multiple matched phrases correctly" time="0.000132375">
+        </testcase>
+        <testcase classname="tests/unit/snippet.test.ts" name="Snippet parsing &gt; does not execute HTML tags injected inside snippets" time="0.000105292">
+        </testcase>
+    </testsuite>
+</testsuites>

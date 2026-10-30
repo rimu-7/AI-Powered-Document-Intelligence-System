@@ -1,17 +1,23 @@
 {
-  "name": "frontend",
+  "name": "docintel-frontend",
   "version": "0.0.1",
   "type": "module",
   "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format:check": "prettier --check \"**/*.{ts,tsx}\"",
+    "gen:api": "openapi-typescript openapi.json -o lib/api/schema.d.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

@@ -17,7 +17,7 @@ deterministically, checked against the source text (grounding), validated by
 rules, and shown to reviewers with evidence. The LLM never performs
 arithmetic, approves records, or influences access control.
 
-### Runtime prompts (verbatim, `app/modules/extraction/prompts.py`)
+### Runtime prompts (verbatim, `backend/app/modules/extraction/prompts.py`)
 
 System prompt (`invoice-extract-v1`):
 
@@ -57,7 +57,7 @@ Return only JSON matching the schema.
 ```
 
 The response format is a strict JSON schema generated from
-`app/modules/extraction/schemas.py::RawExtraction` (every field is
+`backend/app/modules/extraction/schemas.py::RawExtraction` (every field is
 `{value, page, evidence}`, all properties required, no additional
 properties). Invalid output gets one repair message ("That output did not
 match the JSON schema. Return only valid JSON matching the schema."), then the
@@ -101,9 +101,20 @@ the scope corrections listed below.
 4. "This is my requirement [assignment text]; I used FastAPI instead of
    Node.js/NestJS; the frontend comes later, focus on the backend; clean up
    what is not needed and make it industry-level."
+5. "Build a plan for the frontend: a polished, clean UI with Next.js, pnpm and
+   shadcn/ui only, light and dark mode, no duplicate fetching, axios" (the
+   frontend was then built from that plan).
+6. Fixes for issues seen after uploading real documents (two-column layouts,
+   duplicate warnings, approval errors) and for a `$` invoice displayed as
+   euros; use an enum for currencies.
+7. "Combine the separately developed backend and frontend with Docker; tests,
+   README and a clean, scalable file organization."
 
-The full text of prompt 1 is the candidate's own document and should be
-attached alongside this file (`docs/prompts/` is the intended location).
+The full text of prompt 1 is the candidate's own document:
+[`prompts/master-engineering-prompt.md`](prompts/master-engineering-prompt.md)
+(verbatim) and
+[`prompts/master-engineering-prompt-formatted.md`](prompts/master-engineering-prompt-formatted.md)
+(the same specification, reformatted for reading).
 
 ### Defects the AI introduced and then found by running the system
 Kept as regression tests: Celery queues bound to the wrong exchange; worker
