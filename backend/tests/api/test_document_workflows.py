@@ -53,6 +53,16 @@ async def test_native_invoice_end_to_end(client: Any, org: dict[str, Any], pipel
     text = (await client.get(f"/api/v1/documents/{out['doc_id']}/text", headers=h)).json()
     assert spec.invoice_number in text[0]["text"]
 
+    img = await client.get(f"/api/v1/documents/{out['doc_id']}/pages/1/image", params={"width": 500}, headers=h)
+    assert img.status_code == 200 and img.headers["content-type"] == "image/webp", img.text
+    assert img.content[:4] == b"RIFF" and img.content[8:12] == b"WEBP"
+    again = await client.get(
+        f"/api/v1/documents/{out['doc_id']}/pages/1/image", params={"width": 600}, headers={**h, "If-None-Match": img.headers["etag"]}
+    )
+    assert again.status_code == 304  # 500 and 600 both round up to the cached 640 px image
+    missing = await client.get(f"/api/v1/documents/{out['doc_id']}/pages/9/image", headers=h)
+    assert missing.status_code == 404 and missing.json()["error"]["code"] == "PAGE_NOT_FOUND"
+
     dl = await client.get(f"/api/v1/documents/{out['doc_id']}/download", headers=h)
     assert dl.status_code == 200 and dl.content.startswith(b"%PDF") and "attachment" in dl.headers["content-disposition"]
 
@@ -69,10 +79,11 @@ async def test_native_invoice_end_to_end(client: Any, org: dict[str, Any], pipel
         "/api/v1/search/keyword", params={"q": spec.invoice_number, "currency": spec.currency, "amount_min": "0"}, headers=h
     )
     assert any(hit["document_id"] == out["doc_id"] for hit in r.json()["items"])
-    r = await client.get(
-        "/api/v1/search/keyword", params={"q": spec.invoice_number, "currency": "ZZZ" if spec.currency != "ZZZ" else "AAA"}, headers=h
-    )
+    other = "JPY" if spec.currency != "JPY" else "EUR"
+    r = await client.get("/api/v1/search/keyword", params={"q": spec.invoice_number, "currency": other}, headers=h)
     assert all(hit["document_id"] != out["doc_id"] for hit in r.json()["items"])
+    r = await client.get("/api/v1/search/keyword", params={"q": spec.invoice_number, "currency": "ZZZ"}, headers=h)
+    assert r.status_code == 422  # not a CurrencyCode
     assert (await client.get("/api/v1/search/keyword", params={"q": "  "}, headers=h)).json()["error"]["code"] == "EMPTY_QUERY"
     r = await client.post("/api/v1/search/hybrid", json={"query": "x", "filters": {"colour": "red"}}, headers=h)
     assert r.status_code == 422
@@ -97,6 +108,14 @@ async def test_arithmetic_error_goes_to_review_and_correction_flow(client: Any, 
     # Approval is blocked while ERROR issues are open.
     r = await client.post(f"/api/v1/invoices/{inv['id']}/approve", headers=h, json={"expected_version": inv["version"]})
     assert r.status_code == 409 and r.json()["error"]["code"] == "BLOCKING_ISSUES"
+
+    # Currency corrections must be a CurrencyCode.
+    r = await client.patch(
+        f"/api/v1/invoices/{inv['id']}/corrections",
+        headers=h,
+        json={"expected_version": inv["version"], "reason": "fix", "changes": [{"field_path": "currency", "value": "$"}]},
+    )
+    assert r.status_code == 422 and r.json()["error"]["code"] == "INVALID_CORRECTION_VALUE"
 
     # Stale version is rejected (optimistic locking).
     corrected_total = str(spec.subtotal + spec.tax_amount)
@@ -158,6 +177,8 @@ async def test_duplicate_invoice_and_file_detection(client: Any, org: dict[str, 
     codes = {(i["rule_code"], i["severity"]) for i in issues}
     assert ("DUPLICATE_FILE", "WARNING") in codes
     assert ("DUPLICATE_INVOICE", "CRITICAL") in codes
+    dup = next(i for i in issues if i["rule_code"] == "DUPLICATE_INVOICE")
+    assert dup["details_json"]["other_filename"] == "a.pdf" and "'a.pdf'" in dup["message"]
     assert second["job"]["state"] == "REQUIRES_REVIEW"
 
 

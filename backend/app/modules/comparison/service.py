@@ -20,8 +20,8 @@ from app.modules.comparison.models import ComparisonFinding, DocumentComparison
 from app.modules.documents.models import Document, DocumentTable, SpreadsheetRow
 from app.modules.extraction.models import InvoiceLineItem, InvoiceRecord
 from app.shared.dates import parse_date
-from app.shared.enums import ComparisonStatus, ComparisonType, FindingStatus
-from app.shared.money import ISO_CURRENCIES, UNAMBIGUOUS_SYMBOLS, parse_amount
+from app.shared.enums import ComparisonStatus, ComparisonType, CurrencyCode, FindingStatus
+from app.shared.money import UNAMBIGUOUS_SYMBOLS, parse_amount, to_currency_code
 from app.shared.text import normalize_invoice_number, normalize_supplier
 
 
@@ -106,10 +106,10 @@ def row_to_record(row: SpreadsheetRow, document: Document, mapping: dict[str, st
     if raw_date and parsed_date is None:
         notes.append(f"invoice_date: unparseable {raw_date!r}")
     raw_currency = text_field("currency")
-    currency = None
+    currency: CurrencyCode | None = None
     if raw_currency:
         token = raw_currency.strip()
-        currency = token.upper() if token.upper() in ISO_CURRENCIES else UNAMBIGUOUS_SYMBOLS.get(token)
+        currency = to_currency_code(token) or UNAMBIGUOUS_SYMBOLS.get(token)
         if currency is None:
             notes.append(f"currency: unrecognised {raw_currency!r}")
     return ComparableRecord(
@@ -164,7 +164,7 @@ def run_comparison(session: Session, comparison: DocumentComparison, day_first: 
         amount_tolerance=Decimal(str(params.get("amount_tolerance", "0.01"))),
         supplier_fuzzy_threshold=int(params.get("supplier_fuzzy_threshold", 90)),
         fuzzy_invoice_numbers=bool(params.get("fuzzy_invoice_numbers", True)),
-        default_currency=params.get("default_currency"),
+        default_currency=to_currency_code(params.get("default_currency")),
     )
     org = comparison.organization_id
     if comparison.comparison_type == ComparisonType.PDF_PDF:

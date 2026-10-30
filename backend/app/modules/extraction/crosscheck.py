@@ -26,7 +26,7 @@ from decimal import Decimal
 from app.core.config import get_settings
 from app.modules.extraction.schemas import NormalizationNote, NormalizedInvoice
 from app.modules.validation.financial import check_line, expected_total_candidates, line_sum_tolerance, within
-from app.shared.text import normalize_invoice_number
+from app.shared.text import normalize_for_grounding, normalize_invoice_number
 
 AMOUNT_BLOCK = ("subtotal", "discount_amount", "shipping_amount", "tax_amount", "total_amount", "amounts_tax_inclusive")
 HEADER_FIELDS = (
@@ -78,6 +78,11 @@ def _supported(inv: NormalizedInvoice, field: str) -> bool:
     return ev is not None and ev.support == "SUPPORTED"
 
 
+def _same_text(a: object, b: object) -> bool:
+    """Equal apart from case, punctuation and spacing ("Blvd, New York" = "Blvd New York")."""
+    return a == b or normalize_for_grounding(str(a)) == normalize_for_grounding(str(b))
+
+
 def cross_check(primary: NormalizedInvoice, secondary: NormalizedInvoice) -> NormalizedInvoice:
     tolerance = get_settings().validation_amount_tolerance
     merged = primary.model_copy(deep=True)
@@ -108,7 +113,7 @@ def cross_check(primary: NormalizedInvoice, secondary: NormalizedInvoice) -> Nor
             if name == "invoice_date":
                 merged.invoice_date_raw = secondary.invoice_date_raw
             taken.append(name)
-        elif mine is not None and mine != theirs:
+        elif mine is not None and _supported(secondary, name) and not _same_text(mine, theirs):
             merged.alternatives.setdefault(name, [str(mine), str(theirs)])
             merged.notes.append(
                 NormalizationNote(

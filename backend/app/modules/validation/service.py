@@ -99,7 +99,7 @@ def find_duplicate_candidates(session: Session, record: InvoiceRecord, sha256: s
     if not record.normalized_invoice_number or not record.normalized_supplier:
         return []
     rows = session.execute(
-        select(InvoiceRecord, Document.sha256)
+        select(InvoiceRecord, Document.sha256, Document.original_filename)
         .join(Document, Document.id == InvoiceRecord.document_id)
         .where(
             InvoiceRecord.organization_id == record.organization_id,
@@ -120,8 +120,10 @@ def find_duplicate_candidates(session: Session, record: InvoiceRecord, sha256: s
             total_amount=other.total_amount,
             currency=other.currency,
             same_file=other_sha == sha256,
+            filename=other_filename,
+            review_status=other.review_status.value if other.review_status else None,
         )
-        for other, other_sha in rows
+        for other, other_sha, other_filename in rows
     ]
 
 

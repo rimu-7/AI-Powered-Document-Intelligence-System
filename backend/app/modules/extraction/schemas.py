@@ -14,6 +14,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.shared.enums import CurrencyCode
+
 INVOICE_FIELDS = (
     "invoice_number",
     "invoice_date",
@@ -204,7 +206,7 @@ class NormalizedInvoice(BaseModel):
     customer_address: str | None = None
     purchase_order_number: str | None = None
     payment_reference: str | None = None
-    currency: str | None = None
+    currency: CurrencyCode | None = None
     currency_raw: str | None = None
     subtotal: Decimal | None = None
     discount_amount: Decimal | None = None

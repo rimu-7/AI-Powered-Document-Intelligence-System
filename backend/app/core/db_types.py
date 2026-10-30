@@ -20,12 +20,12 @@ RATIO = Numeric(6, 4, asdecimal=True)
 JSON = JSONB(none_as_null=True)
 
 
-def enum_type(enum_cls: type[StrEnum], name: str | None = None) -> SAEnum:
+def enum_type(enum_cls: type[StrEnum], name: str | None = None, *, length: int = 40) -> SAEnum:
     return SAEnum(
         enum_cls,
         native_enum=False,
         create_constraint=True,
-        length=40,
+        length=length,
         validate_strings=True,
         name=name or enum_cls.__name__.lower(),
         values_callable=lambda e: [m.value for m in e],

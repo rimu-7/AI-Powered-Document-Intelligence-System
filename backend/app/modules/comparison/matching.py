@@ -22,7 +22,7 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
-from app.shared.enums import FindingStatus
+from app.shared.enums import CurrencyCode, FindingStatus
 from app.shared.money import money_str
 
 
@@ -37,7 +37,7 @@ class ComparableRecord:
     normalized_supplier: str | None
     customer: str | None = None
     invoice_date: date | None = None
-    currency: str | None = None
+    currency: CurrencyCode | None = None
     subtotal: Decimal | None = None
     tax_amount: Decimal | None = None
     total_amount: Decimal | None = None
@@ -56,7 +56,7 @@ class MatchOptions:
     supplier_fuzzy_threshold: int = 90
     fuzzy_invoice_numbers: bool = True
     invoice_number_fuzzy_threshold: int = 85
-    default_currency: str | None = None
+    default_currency: CurrencyCode | None = None
 
 
 @dataclass

@@ -13,7 +13,8 @@ from app.modules.extraction.schemas import (
     RawInvoice,
 )
 from app.shared.dates import parse_date
-from app.shared.money import AMBIGUOUS_SYMBOLS, ISO_CURRENCIES, UNAMBIGUOUS_SYMBOLS, detect_currency_token, parse_amount
+from app.shared.enums import CurrencyCode
+from app.shared.money import AMBIGUOUS_SYMBOLS, UNAMBIGUOUS_SYMBOLS, detect_currency_token, parse_amount, to_currency_code
 from app.shared.text import normalize_whitespace, truncate
 
 _TEXT_LIMITS = {
@@ -56,7 +57,7 @@ def infer_decimal_separator(raw: RawInvoice) -> str | None:
     return "." if votes["."] > votes[","] else ","
 
 
-def _amount(value: str | None, field: str, hint: str | None, notes: list[NormalizationNote]) -> tuple[Decimal | None, str | None]:
+def _amount(value: str | None, field: str, hint: str | None, notes: list[NormalizationNote]) -> tuple[Decimal | None, CurrencyCode | None]:
     if value is None or not value.strip():
         return None, None
     parsed = parse_amount(value, decimal_hint=hint)
@@ -79,9 +80,9 @@ def _currency(raw_value: str | None, notes: list[NormalizationNote], inv: Normal
         return
     token = raw_value.strip()
     inv.currency_raw = token[:20]
-    upper = token.upper()
-    if upper in ISO_CURRENCIES:
-        inv.currency = upper
+    code = to_currency_code(token)
+    if code is not None:
+        inv.currency = code
         return
     if token in UNAMBIGUOUS_SYMBOLS:
         inv.currency = UNAMBIGUOUS_SYMBOLS[token]
@@ -153,7 +154,7 @@ def normalize_invoice(raw: RawInvoice, *, segment_index: int, page_start: int | 
     _currency(raw.currency.value, notes, inv)
 
     hint = infer_decimal_separator(raw)
-    currency_hints: set[str] = set()
+    currency_hints: set[CurrencyCode] = set()
     for name in AMOUNT_FIELDS:
         value, cur = _amount(getattr(raw, name).value, name, hint, notes)
         setattr(inv, name, value)

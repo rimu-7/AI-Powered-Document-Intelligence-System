@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import logging
 import tempfile
 import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
 import anyio
+import pymupdf
 from fastapi import APIRouter, Depends, Header, Path, Query, Request, Response, status
 from fastapi.responses import JSONResponse, StreamingResponse
+from PIL import UnidentifiedImageError
 from sqlalchemy import func, select
 from starlette.datastructures import UploadFile
 
@@ -18,7 +21,7 @@ from app.core.exceptions import AppError, ConflictError, NotFoundError, PayloadT
 from app.core.permissions import Permission
 from app.modules.auditing.service import record_audit
 from app.modules.comparison.mapping import MappingSuggestions, suggest_mapping
-from app.modules.documents import service
+from app.modules.documents import page_images, service
 from app.modules.documents.fingerprint import FileRejected
 from app.modules.documents.models import Document, DocumentPage, DocumentTable, SpreadsheetRow
 from app.modules.documents.schemas import (
@@ -37,6 +40,8 @@ from app.modules.documents.upload_service import complete_direct_upload, prepare
 from app.modules.documents.uploadthing import UploadThingError
 from app.shared.enums import DocumentStatus, DocumentType, FileKind, ScanStatus, StorageCategory
 from app.shared.pagination import Page, PageParams, page_params
+
+logger = logging.getLogger("docintel.api.documents")
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 Reader = Annotated[Principal, Depends(require(Permission.DOCUMENT_READ))]
@@ -275,7 +280,11 @@ async def list_pages(
     return Page(items=[PageOut.model_validate(p) for p in rows], total=total, limit=page.limit, offset=page.offset)
 
 
-@router.get("/{document_id}/pages/{page_number}/image")
+@router.get(
+    "/{document_id}/pages/{page_number}/image",
+    response_class=Response,
+    responses={200: {"content": {"image/webp": {}}}, 304: {"description": "Not modified"}},
+)
 async def get_page_image(
     document_id: uuid.UUID,
     page_number: Annotated[int, Path(ge=1)],
@@ -284,103 +293,29 @@ async def get_page_image(
     request: Request,
     width: Annotated[int | None, Query(ge=1, le=4000)] = None,
 ) -> Response:
-    """Render a single document page as PNG with caching and ETag."""
-    import hashlib
-    import io
-    import pymupdf
-    from PIL import Image
+    """One page as a WebP image for the viewer (PDF, PNG/JPG and TIFF).
 
+    ``width`` is rounded up to 240, 640, 1024 or 1600 px. Evidence bounding
+    boxes are in page coordinates: scale them by ``image width / page width``
+    (``page_width`` in ``GET /documents/{id}/pages``)."""
     doc = await service.get_document(session, principal, document_id)
-    page_row = (
-        await session.execute(
-            select(DocumentPage).where(
-                DocumentPage.document_id == doc.id,
-                DocumentPage.page_number == page_number,
-                DocumentPage.organization_id == principal.organization_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if not page_row:
-        raise NotFoundError(f"Page {page_number} not found for document", code="PAGE_NOT_FOUND")
-
-    bucket = original_bucket(doc.storage_key)
-    storage = get_storage()
+    if doc.file_kind not in (FileKind.PDF, FileKind.IMAGE, FileKind.TIFF):
+        raise ValidationFailedError("This document type has no page images", code="PAGE_IMAGE_NOT_SUPPORTED")
+    if doc.page_count is not None and page_number > doc.page_count:
+        raise NotFoundError(f"Page {page_number} not found", code="PAGE_NOT_FOUND")
+    snapped = page_images.snap_width(width)
+    tag = page_images.etag(doc.sha256, page_number, snapped)
+    headers = {"ETag": tag, "Cache-Control": "private, max-age=86400", "Vary": "Authorization"}
+    if request.headers.get("if-none-match") == tag:
+        return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers=headers)
     try:
-        raw_bytes = await anyio.to_thread.run_sync(storage.get_bytes, bucket, doc.storage_key)
-    except Exception as e:
-        raise NotFoundError("Original file could not be retrieved from storage", code="FILE_NOT_FOUND") from e
-
-    def _render() -> bytes:
-        is_pdf = doc.file_kind == FileKind.PDF or str(doc.file_kind).upper() == "PDF"
-        is_img = (
-            doc.file_kind in (FileKind.IMAGE, FileKind.TIFF)
-            or str(doc.file_kind).upper() in ("IMAGE", "TIFF")
-        )
-        if is_pdf:
-            pdf_doc = pymupdf.open(stream=raw_bytes, filetype="pdf")
-            if page_number > len(pdf_doc):
-                raise NotFoundError(f"Page {page_number} out of range", code="PAGE_NOT_FOUND")
-            page = pdf_doc[page_number - 1]
-            rect = page.rect
-            if width and rect.width > 0:
-                scale = width / rect.width
-                mat = pymupdf.Matrix(scale, scale)
-                pix = page.get_pixmap(matrix=mat)
-            else:
-                pix = page.get_pixmap(dpi=150)
-            return pix.tobytes("png")
-        elif is_img:
-            if doc.file_extension in (".tiff", ".tif"):
-                try:
-                    tif_doc = pymupdf.open(stream=raw_bytes, filetype="tiff")
-                    if page_number > len(tif_doc):
-                        raise NotFoundError(f"Page {page_number} out of range", code="PAGE_NOT_FOUND")
-                    page = tif_doc[page_number - 1]
-                    rect = page.rect
-                    if width and rect.width > 0:
-                        scale = width / rect.width
-                        mat = pymupdf.Matrix(scale, scale)
-                        pix = page.get_pixmap(matrix=mat)
-                    else:
-                        pix = page.get_pixmap(dpi=150)
-                    return pix.tobytes("png")
-                except Exception:
-                    pass
-            img = Image.open(io.BytesIO(raw_bytes))
-            if page_number > 1:
-                try:
-                    img.seek(page_number - 1)
-                except EOFError:
-                    raise NotFoundError(f"Page {page_number} out of range", code="PAGE_NOT_FOUND")
-            if width and img.width > 0:
-                h = max(1, int(img.height * (width / img.width)))
-                img = img.resize((width, h), Image.Resampling.LANCZOS)
-            out = io.BytesIO()
-            img.save(out, format="PNG")
-            return out.getvalue()
-        else:
-            raise ValidationFailedError("Document type does not support page image rendering", code="PAGE_IMAGE_NOT_SUPPORTED")
-
-    try:
-        png_bytes = await anyio.to_thread.run_sync(_render)
-    except AppError:
-        raise
-    except Exception as e:
-        raise NotFoundError(f"Rendering page image failed: {e}", code="PAGE_RENDER_FAILED") from e
-
-    etag = f'"{hashlib.sha256(png_bytes).hexdigest()[:32]}"'
-    if request.headers.get("if-none-match") == etag:
-        return Response(status_code=status.HTTP_304_NOT_MODIFIED)
-
-    return Response(
-        content=png_bytes,
-        media_type="image/png",
-        headers={
-            "Cache-Control": "private, max-age=86400",
-            "ETag": etag,
-            "Content-Type": "image/png",
-        },
-    )
+        data = await anyio.to_thread.run_sync(page_images.get_or_render, doc, page_number, snapped, get_settings().s3_bucket_artifacts)
+    except page_images.PageOutOfRange as exc:
+        raise NotFoundError(f"Page {page_number} not found", code="PAGE_NOT_FOUND") from exc
+    except (pymupdf.FileDataError, UnidentifiedImageError, OSError) as exc:
+        logger.warning("page_render_failed", extra={"document_id": str(doc.id), "page": page_number, "error": type(exc).__name__})
+        raise AppError("This page could not be rendered", code="PAGE_RENDER_FAILED", status_code=422) from exc
+    return Response(content=data, media_type="image/webp", headers=headers)
 
 
 @router.get("/{document_id}/text", response_model=list[PageText])

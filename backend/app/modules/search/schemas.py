@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.shared.enums import DocumentStatus, DocumentType, FileKind, ValidationOutcome
+from app.shared.enums import CurrencyCode, DocumentStatus, DocumentType, FileKind, ValidationOutcome
 
 
 class SearchFilters(BaseModel):
@@ -16,7 +16,7 @@ class SearchFilters(BaseModel):
     date_from: date | None = None
     date_to: date | None = None
     supplier: str | None = Field(default=None, max_length=200)
-    currency: str | None = Field(default=None, min_length=3, max_length=3)
+    currency: CurrencyCode | None = None
     amount_min: Decimal | None = None
     amount_max: Decimal | None = None
     file_kinds: list[FileKind] | None = Field(default=None, max_length=10)
@@ -24,10 +24,10 @@ class SearchFilters(BaseModel):
     processing_statuses: list[DocumentStatus] | None = Field(default=None, max_length=10)
     validation_outcomes: list[ValidationOutcome] | None = Field(default=None, max_length=10)
 
-    @field_validator("currency")
+    @field_validator("currency", mode="before")
     @classmethod
-    def _upper(cls, v: str | None) -> str | None:
-        return v.upper() if v else v
+    def _upper(cls, v: object) -> object:
+        return v.strip().upper() if isinstance(v, str) else v
 
 
 class SearchRequest(BaseModel):

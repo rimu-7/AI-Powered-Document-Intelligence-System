@@ -26,6 +26,10 @@ from app.shared.text import normalize_for_grounding
 _NUMBER_RE = re.compile(r"[\-\(]?\d[\d.,'  ]*\d\)?|\d")
 
 
+_CELL_SPLIT_RE = re.compile(r"\s{2,}|\t")
+_MAX_SPAN_LINES = 5
+
+
 @dataclass
 class GroundingPage:
     page_number: int
@@ -34,12 +38,24 @@ class GroundingPage:
     method: str = "native"
     _norm: str | None = None
     _amounts: set[Decimal] | None = None
+    _cells: list[list[list[str]]] | None = None
 
     @property
     def normalized(self) -> str:
         if self._norm is None:
             self._norm = normalize_for_grounding(self.text)
         return self._norm
+
+    @property
+    def cells(self) -> list[list[list[str]]]:
+        """Per text line, its cells (columns separated by 2+ spaces) as normalized tokens."""
+        if self._cells is None:
+            rows: list[list[list[str]]] = []
+            for raw in self.text.splitlines():
+                cells = [normalize_for_grounding(c).split() for c in _CELL_SPLIT_RE.split(raw.strip())]
+                rows.append([c for c in cells if c])
+            self._cells = rows
+        return self._cells
 
     @property
     def amounts(self) -> set[Decimal]:
@@ -63,6 +79,52 @@ def _locate_line(page: GroundingPage, needle_norm: str) -> dict[str, Any] | None
     return None
 
 
+def _span_from(rows: list[list[list[str]]], start: int, first: int, needle: list[str]) -> list[tuple[int, int]] | None:
+    """Match ``needle`` starting at the end of cell ``first`` on line ``start`` and
+    continuing with cells at the start of the following lines.
+
+    Returns the matched (line, cell) positions, or None.
+    """
+    head = rows[start][first]
+    for k in range(min(len(head), len(needle) - 1), 0, -1):
+        if head[-k:] != needle[:k]:
+            continue
+        pos, used = k, [(start, first)]
+        for j in range(start + 1, min(len(rows), start + _MAX_SPAN_LINES)):
+            best, best_cell = 0, -1
+            rest = needle[pos:]
+            for c, cell in enumerate(rows[j]):
+                if len(cell) <= len(rest) and cell == rest[: len(cell)]:
+                    length = len(cell)  # the whole cell continues the value
+                elif cell[: len(rest)] == rest:
+                    length = len(rest)  # the value ends inside this cell
+                else:
+                    continue
+                if length > best:
+                    best, best_cell = length, c
+            if not best:
+                break
+            pos += best
+            used.append((j, best_cell))
+            if pos == len(needle):
+                return used
+    return None
+
+
+def _multiline_span(page: GroundingPage, needle_norm: str) -> list[tuple[int, int]] | None:
+    """Find a value printed over several lines of one column, such as an address
+    next to another column ("456 Corporate Blvd    Invoice Date: ...")."""
+    needle = needle_norm.split()
+    if len(needle) < 2:
+        return None
+    rows = page.cells
+    for i, row in enumerate(rows):
+        for c in range(len(row)):
+            if span := _span_from(rows, i, c, needle):
+                return span
+    return None
+
+
 def _value_on_page(page: GroundingPage, field_name: str, value: Any, raw_value: str | None) -> bool:
     if value is None:
         return False
@@ -70,7 +132,22 @@ def _value_on_page(page: GroundingPage, field_name: str, value: Any, raw_value: 
         if isinstance(value, Decimal) and abs(value).normalize() in page.amounts:
             return True
     needle = normalize_for_grounding(raw_value or str(value))
-    return bool(needle) and needle in page.normalized
+    if not needle:
+        return False
+    return needle in page.normalized or (not isinstance(value, Decimal) and _multiline_span(page, needle) is not None)
+
+
+def _span_line(page: GroundingPage, needle_norm: str) -> dict[str, Any] | None:
+    """Evidence for a multi-line value: the matched cells joined, bounding boxes merged."""
+    span = _multiline_span(page, needle_norm)
+    if span is None:
+        return None
+    raw_cells = [[c.strip() for c in _CELL_SPLIT_RE.split(line.strip()) if c.strip()] for line in page.text.splitlines()]
+    raw_cells = [[c for c in row if normalize_for_grounding(c)] for row in raw_cells]
+    parts = [raw_cells[i][c] for i, c in span]
+    boxes = [b["bbox"] for part in parts if (b := _locate_line(page, normalize_for_grounding(part))) and b.get("bbox")]
+    bbox = [min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)] if boxes else None
+    return {"text": ", ".join(parts), "bbox": bbox}
 
 
 def ground_field(
@@ -98,6 +175,8 @@ def ground_field(
             evidence_text = None
         if line is None:
             line = _locate_line(page, normalize_for_grounding(raw_value or str(value)))
+        if line is None and not isinstance(value, Decimal):
+            line = _span_line(page, normalize_for_grounding(raw_value or str(value)))
         if evidence_text is None and line is not None:
             evidence_text = str(line.get("text", ""))[:200]
         return Evidence(

@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.shared.enums import ComparisonStatus, ComparisonType, FindingStatus
+from app.shared.enums import ComparisonStatus, ComparisonType, CurrencyCode, FindingStatus
 
 
 class ComparisonOptions(BaseModel):
@@ -16,9 +16,7 @@ class ComparisonOptions(BaseModel):
     amount_tolerance: Decimal = Field(default=Decimal("0.01"), ge=0, le=Decimal("100"), description="Absolute tolerance in currency units")
     supplier_fuzzy_threshold: int = Field(default=90, ge=70, le=100)
     fuzzy_invoice_numbers: bool = True
-    default_currency: str | None = Field(
-        default=None, min_length=3, max_length=3, description="Explicit policy: currency assumed for records that state none"
-    )
+    default_currency: CurrencyCode | None = Field(default=None, description="Explicit policy: currency assumed for records that state none")
 
 
 class ComparisonCreate(BaseModel):

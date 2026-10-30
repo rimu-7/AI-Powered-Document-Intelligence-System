@@ -9,7 +9,7 @@ from app.core.exceptions import ValidationFailedError
 from app.core.permissions import Permission
 from app.modules.search import service
 from app.modules.search.schemas import SearchFilters, SearchRequest, SearchResponse
-from app.shared.enums import DocumentStatus, DocumentType, FileKind, ValidationOutcome
+from app.shared.enums import CurrencyCode, DocumentStatus, DocumentType, FileKind, ValidationOutcome
 
 router = APIRouter(prefix="/search", tags=["search"])
 Searcher = Annotated[Principal, Depends(require(Permission.SEARCH))]
@@ -23,7 +23,7 @@ async def keyword(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0, le=1000)] = 0,
     supplier: Annotated[str | None, Query(max_length=200)] = None,
-    currency: Annotated[str | None, Query(min_length=3, max_length=3)] = None,
+    currency: CurrencyCode | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
     amount_min: str | None = None,

@@ -18,7 +18,7 @@ from app.modules.validation.financial import (
     line_sum_tolerance,
     within,
 )
-from app.shared.enums import SEVERITY_ORDER, DocumentType, Severity, ValidationOutcome
+from app.shared.enums import SEVERITY_ORDER, CurrencyCode, DocumentType, Severity, ValidationOutcome
 from app.shared.money import ISO_CURRENCIES, money_str
 
 
@@ -44,7 +44,7 @@ class InvoiceView:
     payment_due_date: date | None
     supplier_name: str | None
     customer_name: str | None
-    currency: str | None
+    currency: CurrencyCode | None
     currency_raw: str | None
     subtotal: Decimal | None
     discount_amount: Decimal | None
@@ -67,8 +67,10 @@ class DuplicateCandidate:
     document_id: str
     invoice_date: date | None
     total_amount: Decimal | None
-    currency: str | None
+    currency: CurrencyCode | None
     same_file: bool = False
+    filename: str | None = None
+    review_status: str | None = None
 
 
 @dataclass
@@ -501,22 +503,23 @@ def rule_duplicates(view: InvoiceView, ctx: ValidationContext) -> list[IssueDraf
             cand.total_amount is not None
             and view.total_amount is not None
             and cand.total_amount == view.total_amount
-            and cand.currency == view.currency
+            and (cand.currency == view.currency or cand.currency is None or view.currency is None)
         )
         same_date = cand.invoice_date == view.invoice_date
+        where = f" in '{cand.filename}'" if cand.filename else " in another document"
         if same_amount and same_date and cand.same_file:
-            severity, message = Severity.CRITICAL, "Identical file and invoice already submitted (exact duplicate)"
+            severity, message = Severity.CRITICAL, f"Identical file and invoice already submitted{where} (exact duplicate)"
         elif same_amount and same_date:
             severity, message = (
                 Severity.ERROR,
-                "Same supplier, invoice number, date and total already exist in another document (likely duplicate)",
+                f"Same supplier, invoice number, date and total already exist{where} (likely duplicate)",
             )
         elif same_amount:
-            severity, message = Severity.WARNING, "Same supplier, invoice number and total exist with a different date"
+            severity, message = Severity.WARNING, f"Same supplier, invoice number and total exist{where} with a different date"
         else:
             severity, message = (
                 Severity.WARNING,
-                "Same supplier and invoice number exist with different amounts (possible revision or reused number)",
+                f"Same supplier and invoice number exist{where} with different amounts (possible revision or reused number)",
             )
         issues.append(
             IssueDraft(
@@ -527,6 +530,8 @@ def rule_duplicates(view: InvoiceView, ctx: ValidationContext) -> list[IssueDraf
                 details={
                     "other_invoice_id": cand.invoice_id,
                     "other_document_id": cand.document_id,
+                    "other_filename": cand.filename,
+                    "other_review_status": cand.review_status,
                     "other_total": _m(cand.total_amount),
                     "other_date": cand.invoice_date.isoformat() if cand.invoice_date else None,
                 },
@@ -567,6 +572,17 @@ def rule_grounding(view: InvoiceView, ctx: ValidationContext) -> list[IssueDraft
                     note.get("message", ""),
                     field_path=note.get("field"),
                     details={"alternatives": view.alternatives.get(str(note.get("field")))},
+                )
+            )
+        elif code == "CURRENCY_INFERRED":
+            issues.append(
+                IssueDraft(
+                    "CURRENCY_INFERRED",
+                    Severity.INFO,
+                    note.get("message", ""),
+                    field_path="currency",
+                    actual=view.currency,
+                    details={"candidates": view.alternatives.get("currency"), "printed": view.currency_raw},
                 )
             )
         elif code == "CROSS_CHECK_APPLIED":

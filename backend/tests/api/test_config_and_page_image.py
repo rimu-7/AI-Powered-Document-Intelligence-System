@@ -1,8 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-from app.core.config import get_settings
-
 
 @pytest.mark.asyncio
 async def test_public_config_endpoint(client: AsyncClient):
@@ -15,4 +13,5 @@ async def test_public_config_endpoint(client: AsyncClient):
     assert isinstance(data["upload_max_file_bytes"], int)
     assert isinstance(data["upload_max_files"], int)
     assert "direct_upload_available" in data
-
+    currencies = {c["code"]: c["minor_units"] for c in data["currencies"]}
+    assert currencies["USD"] == 2 and currencies["JPY"] == 0 and currencies["KWD"] == 3

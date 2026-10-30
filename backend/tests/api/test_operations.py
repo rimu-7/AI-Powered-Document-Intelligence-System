@@ -145,3 +145,22 @@ async def test_scanned_pdf_png_and_tiff_go_through_ocr(client: Any, pipeline: An
         assert any(i["invoice_number"] == spec.invoice_number for i in invoices), invoices
     tiff_pages = (await client.get(f"/api/v1/documents/{results[2]['document_id']}/pages", headers=h)).json()
     assert tiff_pages["total"] == 2
+
+
+async def test_database_rejects_currency_outside_the_enum(client: Any, org: dict[str, Any], pipeline: Any) -> None:
+    from sqlalchemy import text
+    from sqlalchemy.exc import IntegrityError
+
+    from app.core.database import sync_session
+    from app.modules.extraction.models import InvoiceRecord
+
+    h = org["headers"]
+    r = await upload(client, h, [("cur.pdf", invoice_pdf_bytes([random_invoice(random.Random(41), 401)]), "application/pdf")])
+    doc_id = uuid.UUID(r.json()["results"][0]["document_id"])
+    pipeline()
+    with sync_session() as s:
+        invoice_id = s.execute(select(InvoiceRecord.id).where(InvoiceRecord.document_id == doc_id)).scalars().first()
+        assert invoice_id is not None
+        with pytest.raises(IntegrityError, match="ck_invoice_records_currencycode"):
+            s.execute(text("UPDATE invoice_records SET currency = 'ZZZ' WHERE id = :id"), {"id": invoice_id})
+        s.rollback()

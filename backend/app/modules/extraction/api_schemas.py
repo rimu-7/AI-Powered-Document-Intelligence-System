@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from app.shared.enums import (
+    CurrencyCode,
     DocumentType,
     ExtractionStatus,
     ResolutionStatus,
@@ -73,7 +74,7 @@ class InvoiceOut(BaseModel):
     customer_address: str | None
     purchase_order_number: str | None
     payment_reference: str | None
-    currency: str | None
+    currency: CurrencyCode | None
     currency_raw: str | None
     subtotal: Decimal | None
     discount_amount: Decimal | None

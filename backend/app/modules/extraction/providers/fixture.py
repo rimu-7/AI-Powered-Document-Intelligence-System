@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 
 from app.modules.extraction.providers.base import (
     ClassificationResponse,
@@ -43,8 +44,11 @@ _LABELS: list[tuple[str, re.Pattern[str]]] = [
     ("invoice_number", re.compile(rf"\b(?:tax\s+)?invoice[\s.,]*(?:no\.?|number|num|#|id)[\s.,:#]*(?P<v>{_ID})", re.I)),
     ("invoice_number", re.compile(rf"\bcredit\s+note[\s.,]*(?:no\.?|number|#)[\s.,:#]*(?P<v>{_ID})", re.I)),
     ("invoice_number", re.compile(rf"\breceipt[\s.,]*(?:no\.?|number|#)[\s.,:#]*(?P<v>{_ID})", re.I)),
-    ("payment_due_date", re.compile(r"\b(?:due\s+date|payment\s+due(?:\s+date)?|pay\s+by)\s*[:.]?\s*(?P<v>.+)", re.I)),
-    ("invoice_date", re.compile(r"\b(?:invoice\s+date|date\s+of\s+issue|issue\s+date|tax\s+point|date)\s*[:.]\s*(?P<v>.+)", re.I)),
+    ("payment_due_date", re.compile(r"\b(?:due\s+date|payment\s+due(?:\s+date)?|pay\s+by)\s*[:.]?\s*(?P<v>[A-Za-z0-9].*)", re.I)),
+    (
+        "invoice_date",
+        re.compile(r"\b(?:invoice\s+date|date\s+of\s+issue|issue\s+date|tax\s+point|date)\s*[:.]\s*(?P<v>[A-Za-z0-9].*)", re.I),
+    ),
     (
         "purchase_order_number",
         re.compile(rf"\b(?:p\.?\s?o\.?\s*(?:no\.?|number|#)|purchase\s+order(?:\s+(?:no\.?|number))?)[\s.,:#]*(?P<v>{_ID})", re.I),
@@ -76,6 +80,31 @@ _PRICE_HEADER_RE = re.compile(r"\b(unit\s+price|price|rate|amount|total)\b", re.
 _TAX_INCLUSIVE_RE = re.compile(r"\b(prices?|amounts?)\s+(?:are\s+)?(incl(?:usive|\.|uding)?)\s+(?:of\s+)?(vat|tax|gst)\b", re.I)
 _TAX_EXCLUSIVE_RE = re.compile(r"\b(prices?|amounts?)\s+(?:are\s+)?(excl(?:usive|\.|uding)?)\s+(?:of\s+)?(vat|tax|gst)\b", re.I)
 _PERCENT_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*%")
+_LABEL_ONLY_RE = re.compile(r"^[^:\d]{1,40}:$")  # "Status:", "Invoice Details:"
+_REFERENCE_RE = re.compile(r"^(?=[A-Za-z0-9/_.\-]*\d)(?=[A-Za-z0-9/_.\-]*[A-Za-z])[A-Za-z0-9]+(?:[/_.\-][A-Za-z0-9]+)+$")  # INV-2023-00147
+_URL_RE = re.compile(r"\bhttps?://|\bwww\.\S+\.\w", re.I)  # browser print headers/footers carry the page URL
+_DOCUMENT_TITLES = ("invoice", "taxinvoice", "creditnote", "receipt", "statement", "proformainvoice", "bill", "salesinvoice")
+
+
+def _is_title(cell: str) -> bool:
+    """Document titles, including OCR misreads such as "| NVOICE" or "lNVOICE"."""
+    letters = re.sub(r"[^a-z]", "", cell.lower())
+    if not letters or len(letters) > 20:
+        return False
+    return any(letters == t or (len(t) >= 6 and SequenceMatcher(None, letters, t).ratio() >= 0.85) for t in _DOCUMENT_TITLES)
+
+
+def _is_address_part(cell: str) -> bool:
+    return bool(
+        cell
+        and not _LABEL_ONLY_RE.match(cell)
+        and not _REFERENCE_RE.match(cell)
+        and not _is_title(cell)
+        and not _URL_RE.search(cell)
+        and not any(p.search(cell) for _, p in _LABELS)
+        and not _TOTAL_RE.search(cell)
+        and not _ITEM_HEADER_RE.search(cell)
+    )
 
 
 @dataclass
@@ -99,6 +128,14 @@ def _lines(text: str) -> list[_Line]:
         if stripped:
             out.append(_Line(page, raw.rstrip()))
     return out
+
+
+def _column_cell(line: _Line, column: int) -> str:
+    """The cell in ``column``; lines with fewer cells contribute their last cell."""
+    cells = line.cells
+    if not cells:
+        return ""
+    return cells[column] if column < len(cells) else cells[-1]
 
 
 def _field(value: str | None, line: _Line | None) -> RawField:
@@ -183,31 +220,42 @@ class LocalRulesProvider:
                         value = _CELL_SPLIT_RE.split(value)[0] if value else ""
                         if value and any(p.search(value) for n, p in _LABELS if n != name):
                             value = ""
+                        column = line.cells.index(cell_text) if cell_text in line.cells else 0
                         if not value and idx + 1 < len(lines):
                             nxt = lines[idx + 1]
-                            value = nxt.cells[0] if nxt.cells else ""
-                            if value:
+                            value = _column_cell(nxt, column)
+                            if value and not _LABEL_ONLY_RE.match(value):
                                 found[name] = _field(value, nxt)
-                                self._address(inv, name, lines, idx + 2)
+                                self._address(inv, name, lines, idx + 2, column)
                             continue
                         if value:
-                            self._address(inv, name, lines, idx + 1)
+                            self._address(inv, name, lines, idx + 1, column)
                     if value:
                         found[name] = _field(value, line)
 
-        # Letterhead fallback for the supplier: first meaningful line of the segment.
+        # Letterhead fallback for the supplier: first meaningful cell of the segment,
+        # skipping the document title ("INVOICE" may sit left of the supplier block).
         if "supplier_name" not in found:
-            for line in lines[:8]:
-                first = line.cells[0] if line.cells else ""
-                if (
-                    first
-                    and re.search(r"[A-Za-z]{3}", first)
-                    and not re.fullmatch(r"(?i)(tax\s+)?invoice|credit\s+note|receipt|statement", first)
-                    and not any(p.search(first) for _, p in _LABELS)
-                    and not _amount_tokens(first)
-                ):
-                    found["supplier_name"] = _field(first, line)
-                    self._address(inv, "supplier_name", lines, lines.index(line) + 1)
+            for line_idx, line in enumerate(lines[:8]):
+                if _URL_RE.search(line.text):
+                    continue  # "Invoice Print   https://..." header added by the browser
+                pick = next(
+                    (
+                        (col, cell)
+                        for col, cell in enumerate(line.cells)
+                        if re.search(r"[A-Za-z]{3}", cell)
+                        and not _is_title(cell)
+                        and not _LABEL_ONLY_RE.match(cell)
+                        and not _REFERENCE_RE.match(cell)
+                        and not any(p.search(cell) for _, p in _LABELS)
+                        and not _amount_tokens(cell)
+                    ),
+                    None,
+                )
+                if pick is not None:
+                    column, name_cell = pick
+                    found["supplier_name"] = _field(name_cell, line)
+                    self._address(inv, "supplier_name", lines, line_idx + 1, column, multi_column=len(line.cells) > 1)
                     break
 
         self._totals(lines, found)
@@ -232,12 +280,18 @@ class LocalRulesProvider:
         inv.line_items = self._line_items(lines)
         return inv
 
-    def _address(self, inv: RawInvoice, name: str, lines: list[_Line], start: int) -> None:
+    def _address(self, inv: RawInvoice, name: str, lines: list[_Line], start: int, column: int = 0, *, multi_column: bool = False) -> None:
+        """Address lines under a name, read from the name's column.
+
+        In a two-column header the address continues in the same column; a line
+        with a single cell is taken as part of it only if it is not a label or a
+        reference number (for example the invoice number in the other column).
+        """
         parts: list[str] = []
         first: _Line | None = None
         for line in lines[start : start + 3]:
-            cell = line.cells[0] if line.cells else ""
-            if not cell or any(p.search(cell) for _, p in _LABELS) or _TOTAL_RE.search(cell) or _ITEM_HEADER_RE.search(cell):
+            cell = _column_cell(line, column) if (column or multi_column) else (line.cells[0] if line.cells else "")
+            if not _is_address_part(cell):
                 break
             first = first or line
             parts.append(cell)

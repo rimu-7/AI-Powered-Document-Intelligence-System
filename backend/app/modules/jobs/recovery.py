@@ -25,6 +25,7 @@ from app.core.database import sync_session
 from app.core.logging import get_logger
 from app.core.metrics import RECOVERY_ACTIONS
 from app.modules.documents.models import Document, IdempotencyRecord, StorageObject
+from app.modules.documents.page_images import page_images_prefix
 from app.modules.documents.storage import get_storage
 from app.modules.identity.models import RefreshSession
 from app.modules.jobs.lifecycle import Claim, fail_task_terminally, lock_run, maybe_finish_parsing
@@ -183,6 +184,10 @@ def cleanup_storage() -> dict[str, int]:
                     obj.deleted_at = now
                 except Exception:  # noqa: BLE001
                     ok = False
+            try:  # cached page images are not tracked as storage objects
+                storage.delete_prefix(settings.s3_bucket_artifacts, page_images_prefix(doc.organization_id, doc.id))
+            except Exception:  # noqa: BLE001
+                ok = False
             if ok:
                 session.delete(doc)
                 purged_docs += 1

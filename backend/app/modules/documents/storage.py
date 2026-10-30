@@ -171,6 +171,20 @@ class ObjectStorage:
         except Exception as exc:
             raise _wrap(exc) from exc
 
+    def delete_prefix(self, bucket: str, prefix: str) -> int:
+        """Delete every object under ``prefix`` (S3 buckets only). Returns the count."""
+        deleted = 0
+        try:
+            paginator = _client().get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+                keys = [{"Key": obj["Key"]} for obj in page.get("Contents", [])]
+                if keys:
+                    _client().delete_objects(Bucket=bucket, Delete={"Objects": keys, "Quiet": True})
+                    deleted += len(keys)
+        except Exception as exc:
+            raise _wrap(exc) from exc
+        return deleted
+
     def presigned_get(self, bucket: str, key: str, filename: str, ttl: int) -> str:
         return str(
             _client(public=True).generate_presigned_url(

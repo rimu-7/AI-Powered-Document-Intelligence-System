@@ -21,7 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base, CreatedAt, Timestamps, UUIDPrimaryKey
 from app.core.db_types import JSON, MONEY, QUANTITY, RATIO, UNIT_PRICE, enum_type, json_default
-from app.shared.enums import DocumentType, ExtractionStatus, ReviewStatus, ValidationOutcome
+from app.shared.enums import CurrencyCode, DocumentType, ExtractionStatus, ReviewStatus, ValidationOutcome
 
 
 def _doc_fk() -> ForeignKeyConstraint:
@@ -110,7 +110,7 @@ class InvoiceRecord(UUIDPrimaryKey, Timestamps, Base):
     customer_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     purchase_order_number: Mapped[str | None] = mapped_column(String(120), nullable=True)
     payment_reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    currency: Mapped[CurrencyCode | None] = mapped_column(enum_type(CurrencyCode, length=3), nullable=True)
     currency_raw: Mapped[str | None] = mapped_column(String(20), nullable=True)
     subtotal: Mapped[Decimal | None] = mapped_column(MONEY, nullable=True)
     discount_amount: Mapped[Decimal | None] = mapped_column(MONEY, nullable=True)

@@ -12,108 +12,131 @@ import re
 from dataclasses import dataclass
 from decimal import ROUND_HALF_EVEN, Decimal, InvalidOperation
 
-# ISO 4217 minor units for currencies we expect to see. Unknown codes default
-# to 2 decimals but are flagged by INVALID_CURRENCY validation.
-CURRENCY_MINOR_UNITS: dict[str, int] = {
-    "USD": 2,
-    "EUR": 2,
-    "GBP": 2,
-    "JPY": 0,
-    "CNY": 2,
-    "CHF": 2,
-    "CAD": 2,
-    "AUD": 2,
-    "NZD": 2,
-    "SEK": 2,
-    "NOK": 2,
-    "DKK": 2,
-    "PLN": 2,
-    "CZK": 2,
-    "HUF": 2,
-    "INR": 2,
-    "BDT": 2,
-    "PKR": 2,
-    "LKR": 2,
-    "SGD": 2,
-    "HKD": 2,
-    "KRW": 0,
-    "TWD": 2,
-    "THB": 2,
-    "MYR": 2,
-    "IDR": 2,
-    "PHP": 2,
-    "VND": 0,
-    "AED": 2,
-    "SAR": 2,
-    "QAR": 2,
-    "BHD": 3,
-    "KWD": 3,
-    "OMR": 3,
-    "JOD": 3,
-    "TND": 3,
-    "ILS": 2,
-    "TRY": 2,
-    "ZAR": 2,
-    "NGN": 2,
-    "KES": 2,
-    "EGP": 2,
-    "MAD": 2,
-    "BRL": 2,
-    "MXN": 2,
-    "ARS": 2,
-    "CLP": 0,
-    "COP": 2,
-    "PEN": 2,
-    "RUB": 2,
-    "UAH": 2,
-    "RON": 2,
-    "BGN": 2,
-    "ISK": 0,
-    "CLF": 4,
+from app.shared.enums import CurrencyCode
+
+# ISO 4217 minor units for every supported currency (one entry per CurrencyCode).
+CURRENCY_MINOR_UNITS: dict[CurrencyCode, int] = {
+    CurrencyCode.USD: 2,
+    CurrencyCode.EUR: 2,
+    CurrencyCode.GBP: 2,
+    CurrencyCode.JPY: 0,
+    CurrencyCode.CNY: 2,
+    CurrencyCode.CHF: 2,
+    CurrencyCode.CAD: 2,
+    CurrencyCode.AUD: 2,
+    CurrencyCode.NZD: 2,
+    CurrencyCode.SEK: 2,
+    CurrencyCode.NOK: 2,
+    CurrencyCode.DKK: 2,
+    CurrencyCode.PLN: 2,
+    CurrencyCode.CZK: 2,
+    CurrencyCode.HUF: 2,
+    CurrencyCode.INR: 2,
+    CurrencyCode.BDT: 2,
+    CurrencyCode.PKR: 2,
+    CurrencyCode.LKR: 2,
+    CurrencyCode.SGD: 2,
+    CurrencyCode.HKD: 2,
+    CurrencyCode.KRW: 0,
+    CurrencyCode.TWD: 2,
+    CurrencyCode.THB: 2,
+    CurrencyCode.MYR: 2,
+    CurrencyCode.IDR: 2,
+    CurrencyCode.PHP: 2,
+    CurrencyCode.VND: 0,
+    CurrencyCode.AED: 2,
+    CurrencyCode.SAR: 2,
+    CurrencyCode.QAR: 2,
+    CurrencyCode.BHD: 3,
+    CurrencyCode.KWD: 3,
+    CurrencyCode.OMR: 3,
+    CurrencyCode.JOD: 3,
+    CurrencyCode.TND: 3,
+    CurrencyCode.ILS: 2,
+    CurrencyCode.TRY: 2,
+    CurrencyCode.ZAR: 2,
+    CurrencyCode.NGN: 2,
+    CurrencyCode.KES: 2,
+    CurrencyCode.EGP: 2,
+    CurrencyCode.MAD: 2,
+    CurrencyCode.BRL: 2,
+    CurrencyCode.MXN: 2,
+    CurrencyCode.ARS: 2,
+    CurrencyCode.CLP: 0,
+    CurrencyCode.COP: 2,
+    CurrencyCode.PEN: 2,
+    CurrencyCode.RUB: 2,
+    CurrencyCode.UAH: 2,
+    CurrencyCode.RON: 2,
+    CurrencyCode.BGN: 2,
+    CurrencyCode.ISK: 0,
+    CurrencyCode.CLF: 4,
 }
 
-ISO_CURRENCIES = frozenset(CURRENCY_MINOR_UNITS)
+ISO_CURRENCIES: frozenset[CurrencyCode] = frozenset(CurrencyCode)
 
 # Symbols that map to exactly one currency.
-UNAMBIGUOUS_SYMBOLS: dict[str, str] = {
-    "€": "EUR",
-    "£": "GBP",
-    "₹": "INR",
-    "৳": "BDT",
-    "₩": "KRW",
-    "₫": "VND",
-    "₪": "ILS",
-    "₺": "TRY",
-    "₦": "NGN",
-    "₱": "PHP",
-    "₴": "UAH",
-    "₽": "RUB",
-    "฿": "THB",
-    "US$": "USD",
-    "A$": "AUD",
-    "C$": "CAD",
-    "NZ$": "NZD",
-    "S$": "SGD",
-    "HK$": "HKD",
-    "R$": "BRL",
-    "CHF": "CHF",
-    "Tk": "BDT",
+UNAMBIGUOUS_SYMBOLS: dict[str, CurrencyCode] = {
+    "€": CurrencyCode.EUR,
+    "£": CurrencyCode.GBP,
+    "₹": CurrencyCode.INR,
+    "৳": CurrencyCode.BDT,
+    "₩": CurrencyCode.KRW,
+    "₫": CurrencyCode.VND,
+    "₪": CurrencyCode.ILS,
+    "₺": CurrencyCode.TRY,
+    "₦": CurrencyCode.NGN,
+    "₱": CurrencyCode.PHP,
+    "₴": CurrencyCode.UAH,
+    "₽": CurrencyCode.RUB,
+    "฿": CurrencyCode.THB,
+    "US$": CurrencyCode.USD,
+    "A$": CurrencyCode.AUD,
+    "C$": CurrencyCode.CAD,
+    "NZ$": CurrencyCode.NZD,
+    "S$": CurrencyCode.SGD,
+    "HK$": CurrencyCode.HKD,
+    "R$": CurrencyCode.BRL,
+    "CHF": CurrencyCode.CHF,
+    "Tk": CurrencyCode.BDT,
 }
 
 # Symbols shared by several currencies: never resolved without more context.
-AMBIGUOUS_SYMBOLS: dict[str, tuple[str, ...]] = {
-    "$": ("USD", "CAD", "AUD", "NZD", "SGD", "HKD", "MXN", "ARS", "CLP", "COP"),
-    "¥": ("JPY", "CNY"),
-    "kr": ("SEK", "NOK", "DKK", "ISK"),
-    "Rs": ("INR", "PKR", "LKR"),
-    "R": ("ZAR", "BRL"),
+AMBIGUOUS_SYMBOLS: dict[str, tuple[CurrencyCode, ...]] = {
+    "$": (
+        CurrencyCode.USD,
+        CurrencyCode.CAD,
+        CurrencyCode.AUD,
+        CurrencyCode.NZD,
+        CurrencyCode.SGD,
+        CurrencyCode.HKD,
+        CurrencyCode.MXN,
+        CurrencyCode.ARS,
+        CurrencyCode.CLP,
+        CurrencyCode.COP,
+    ),
+    "¥": (CurrencyCode.JPY, CurrencyCode.CNY),
+    "kr": (CurrencyCode.SEK, CurrencyCode.NOK, CurrencyCode.DKK, CurrencyCode.ISK),
+    "Rs": (CurrencyCode.INR, CurrencyCode.PKR, CurrencyCode.LKR),
+    "R": (CurrencyCode.ZAR, CurrencyCode.BRL),
 }
 
 
+def to_currency_code(value: object) -> CurrencyCode | None:
+    """The CurrencyCode for an ISO code in any letter case, else None."""
+    if isinstance(value, CurrencyCode):
+        return value
+    if not isinstance(value, str):
+        return None
+    try:
+        return CurrencyCode(value.strip().upper())
+    except ValueError:
+        return None
+
+
 def minor_units(currency: str | None) -> int:
-    if currency is None:
-        return 2
-    return CURRENCY_MINOR_UNITS.get(currency.upper(), 2)
+    code = to_currency_code(currency)
+    return CURRENCY_MINOR_UNITS[code] if code else 2
 
 
 def quantum(currency: str | None) -> Decimal:
@@ -147,7 +170,7 @@ class ParsedAmount:
     value: Decimal
     raw: str
     ambiguous: bool = False
-    currency_hint: str | None = None
+    currency_hint: CurrencyCode | None = None
     note: str | None = None
 
 
@@ -155,14 +178,15 @@ _CURRENCY_TOKEN_RE = re.compile(r"(US\$|A\$|C\$|NZ\$|S\$|HK\$|R\$|[€£₹৳�
 _ALLOWED_CHARS_RE = re.compile(r"^[0-9.,'\s  ]+$")
 
 
-def detect_currency_token(text: str) -> tuple[str | None, tuple[str, ...]]:
-    """Return (iso_code, candidates). iso_code is set only when unambiguous."""
+def detect_currency_token(text: str) -> tuple[CurrencyCode | None, tuple[CurrencyCode, ...]]:
+    """Return (code, candidates). code is set only when unambiguous."""
     for match in _CURRENCY_TOKEN_RE.finditer(text):
         token = match.group(1).rstrip(".")
         if token in UNAMBIGUOUS_SYMBOLS:
             return UNAMBIGUOUS_SYMBOLS[token], (UNAMBIGUOUS_SYMBOLS[token],)
-        if token.upper() in ISO_CURRENCIES and token.isupper():
-            return token.upper(), (token.upper(),)
+        code = to_currency_code(token) if token.isupper() else None
+        if code is not None:
+            return code, (code,)
         if token in AMBIGUOUS_SYMBOLS:
             return None, AMBIGUOUS_SYMBOLS[token]
     return None, ()

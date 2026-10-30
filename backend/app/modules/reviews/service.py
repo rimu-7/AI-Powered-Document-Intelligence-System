@@ -43,7 +43,7 @@ from app.shared.enums import (
     ReviewTaskStatus,
     Severity,
 )
-from app.shared.money import ISO_CURRENCIES
+from app.shared.money import to_currency_code
 from app.shared.text import normalize_invoice_number, normalize_supplier
 
 TEXT_FIELDS = {
@@ -215,9 +215,9 @@ async def apply_corrections(
             record(path, getattr(invoice, path), new_date)
             setattr(invoice, path, new_date)
         elif path == "currency":
-            if value is not None and (not isinstance(value, str) or value.upper() not in ISO_CURRENCIES):
+            new_cur = to_currency_code(value)
+            if value is not None and new_cur is None:
                 raise ValidationFailedError("currency: must be a supported ISO 4217 code", code="INVALID_CORRECTION_VALUE")
-            new_cur = value.upper() if isinstance(value, str) else None
             record(path, invoice.currency, new_cur)
             invoice.currency = new_cur
         elif path == "amounts_tax_inclusive":

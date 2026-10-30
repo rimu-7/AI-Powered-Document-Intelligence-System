@@ -92,11 +92,21 @@ class PageOut(BaseModel):
                 w = meta.get("width") or meta.get("page_width")
             if h is None and isinstance(meta, dict):
                 h = meta.get("height") or meta.get("page_height")
-            d = {k: getattr(data, k) for k in (
-                "id", "page_number", "page_type", "character_count",
-                "ocr_engine", "ocr_confidence", "processing_status",
-                "error_code", "metadata_json"
-            ) if hasattr(data, k)}
+            d = {
+                k: getattr(data, k)
+                for k in (
+                    "id",
+                    "page_number",
+                    "page_type",
+                    "character_count",
+                    "ocr_engine",
+                    "ocr_confidence",
+                    "processing_status",
+                    "error_code",
+                    "metadata_json",
+                )
+                if hasattr(data, k)
+            }
             d["page_width"] = float(w) if w is not None else None
             d["page_height"] = float(h) if h is not None else None
             return d
