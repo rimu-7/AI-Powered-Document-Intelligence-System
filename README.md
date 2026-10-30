@@ -179,6 +179,32 @@ Backend settings are defined in
 | [evaluation.md](docs/evaluation.md) | dataset, method, measured accuracy and timing |
 | [ai-disclosure.md](docs/ai-disclosure.md) | AI used at runtime, prompts, AI-assisted development |
 
+## AI prompts and AI-assisted development
+
+AI was used in two ways, and both are disclosed:
+
+| What | Where |
+|---|---|
+| Prompts used to develop the backend | [`backend/ai_prompt_backend.md`](backend/ai_prompt_backend.md) |
+| Prompts used to develop the frontend | [`frontend/ai_prompt_frontend.md`](frontend/ai_prompt_frontend.md) |
+| Master engineering specification (verbatim and formatted) | [`docs/prompts/`](docs/prompts) |
+| Prompts the system sends to the LLM at runtime (extraction, classification) | [`backend/app/modules/extraction/prompts.py`](backend/app/modules/extraction/prompts.py), quoted in [ai-disclosure.md](docs/ai-disclosure.md) |
+| Which tools were used, what was reviewed by hand, defects the AI introduced | [ai-disclosure.md](docs/ai-disclosure.md) |
+
+## Submission contents
+
+| # | Deliverable | Where |
+|---|---|---|
+| 1 | Source code | this repository: [`backend/`](backend), [`frontend/`](frontend) |
+| 2 | README and setup instructions | this file ([Quick start](#quick-start)), [backend/README.md](backend/README.md), [frontend/README.md](frontend/README.md) |
+| 3 | Architecture diagram and database schema | [Architecture](#architecture), [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/database.md) |
+| 4 | Working backend API and frontend | `make up`, then <http://localhost:3000> and <http://localhost:8000/docs>; API reference in [docs/api.md](docs/api.md) |
+| 5 | PDF, image, Excel and CSV pipelines | [`backend/app/modules/parsing/`](backend/app/modules/parsing), [`backend/app/workers/`](backend/app/workers); pipeline in [docs/architecture.md](docs/architecture.md) |
+| 6 | Automated tests and results | [`backend/tests/`](backend/tests), [`frontend/tests/`](frontend/tests), [`frontend/e2e/`](frontend/e2e); results in [docs/testing.md](docs/testing.md) and [docs/test-results/](docs/test-results); CI in [`.github/workflows/`](.github/workflows) |
+| 7 | Evaluation report with measured metrics | [docs/evaluation.md](docs/evaluation.md), raw runs in [`backend/evaluation/results/`](backend/evaluation/results) |
+| 8 | Recorded walkthrough | shared with the submission |
+| 9 | AI prompts and AI-assisted development | [AI prompts and AI-assisted development](#ai-prompts-and-ai-assisted-development) |
+
 ## License notes
 
 PyMuPDF and MinIO are AGPL-licensed. Review licensing before distributing the

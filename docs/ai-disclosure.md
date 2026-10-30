@@ -114,7 +114,10 @@ The full text of prompt 1 is the candidate's own document:
 [`prompts/master-engineering-prompt.md`](prompts/master-engineering-prompt.md)
 (verbatim) and
 [`prompts/master-engineering-prompt-formatted.md`](prompts/master-engineering-prompt-formatted.md)
-(the same specification, reformatted for reading).
+(the same specification, reformatted for reading). The development prompts
+for each half are kept next to the code:
+[`backend/ai_prompt_backend.md`](../backend/ai_prompt_backend.md) and
+[`frontend/ai_prompt_frontend.md`](../frontend/ai_prompt_frontend.md).
 
 ### Defects the AI introduced and then found by running the system
 Kept as regression tests: Celery queues bound to the wrong exchange; worker
