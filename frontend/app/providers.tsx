@@ -23,7 +23,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
               if (failureCount >= 2) return false
               if (error instanceof ApiError) {
                 // Never retry client 4xx errors
-                if (error.status >= 400 && error.status < 500 && error.status !== 429) {
+                if (
+                  error.status >= 400 &&
+                  error.status < 500 &&
+                  error.status !== 429
+                ) {
                   return false
                 }
               }
@@ -55,7 +59,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [queryClient])
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
       <QueryClientProvider client={queryClient}>
         <NuqsAdapter>
           <UploadProvider>

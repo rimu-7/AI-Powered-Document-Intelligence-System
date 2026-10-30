@@ -52,15 +52,23 @@ import {
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function DocumentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   const { id } = use(params)
   const router = useRouter()
   const { data: user } = useCurrentUser()
-  const [tab, setTab] = useQueryState("tab", parseAsString.withDefault("invoices"))
+  const [tab, setTab] = useQueryState(
+    "tab",
+    parseAsString.withDefault("invoices")
+  )
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const { data: doc, isLoading, isError, error, refetch } = useDocument(id)
-  const { mutate: reprocess, isPending: isReprocessing } = useReprocessDocument()
+  const { mutate: reprocess, isPending: isReprocessing } =
+    useReprocessDocument()
   const { mutate: deleteDoc, isPending: isDeleting } = useDeleteDocument()
 
   const handleDownload = async () => {
@@ -90,8 +98,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-20 bg-muted animate-pulse rounded-lg" />
-        <div className="h-96 bg-muted animate-pulse rounded-lg" />
+        <div className="h-20 animate-pulse rounded-lg bg-muted" />
+        <div className="h-96 animate-pulse rounded-lg bg-muted" />
       </div>
     )
   }
@@ -109,16 +117,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-xl border bg-card text-card-foreground shadow-sm">
-        <div className="space-y-1.5 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl font-bold tracking-tight truncate" title={doc.original_filename}>
+      <div className="flex min-w-0 flex-col justify-between gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-sm sm:p-6 md:flex-row md:items-center">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h1
+              className="line-clamp-2 text-lg font-bold tracking-tight break-all sm:text-xl"
+              title={doc.original_filename}
+            >
               {doc.original_filename}
             </h1>
-            <StatusBadge status={doc.status} />
-            <StatusBadge status={doc.validation_outcome} />
+            <div className="flex shrink-0 items-center gap-1.5">
+              <StatusBadge status={doc.status} />
+              <StatusBadge status={doc.validation_outcome} />
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap font-mono">
+          <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-muted-foreground">
             <span>Kind: {doc.file_kind}</span>
             <span>•</span>
             <span>Type: {doc.document_type}</span>
@@ -129,8 +142,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5 text-xs">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            className="gap-1.5 text-xs"
+          >
             <Download className="h-3.5 w-3.5" />
             Download
           </Button>
@@ -143,7 +161,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               disabled={isReprocessing}
               className="gap-1.5 text-xs"
             >
-              <RotateCw className={`h-3.5 w-3.5 ${isReprocessing ? "animate-spin" : ""}`} />
+              <RotateCw
+                className={`h-3.5 w-3.5 ${isReprocessing ? "animate-spin" : ""}`}
+              />
               Reprocess
             </Button>
           )}
@@ -163,29 +183,36 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       </div>
 
       {/* Main Tabs */}
-      <Tabs value={tab} onValueChange={(val) => setTab(val)} className="space-y-4">
-        <TabsList className="bg-muted/60 p-1 flex-wrap">
-          <TabsTrigger value="invoices" className="text-xs gap-1.5">
+      <Tabs
+        value={tab}
+        onValueChange={(val) => setTab(val)}
+        className="space-y-4"
+      >
+        <TabsList className="h-auto flex-wrap gap-1 bg-muted/60 p-1">
+          <TabsTrigger
+            value="invoices"
+            className="gap-1.5 px-2.5 py-1.5 text-xs"
+          >
             <FileText className="h-3.5 w-3.5" />
             Invoices
           </TabsTrigger>
-          <TabsTrigger value="pages" className="text-xs gap-1.5">
+          <TabsTrigger value="pages" className="gap-1.5 px-2.5 py-1.5 text-xs">
             <Layers className="h-3.5 w-3.5" />
             Pages
           </TabsTrigger>
-          <TabsTrigger value="text" className="text-xs gap-1.5">
+          <TabsTrigger value="text" className="gap-1.5 px-2.5 py-1.5 text-xs">
             <FileText className="h-3.5 w-3.5" />
             Extracted Text
           </TabsTrigger>
-          <TabsTrigger value="tables" className="text-xs gap-1.5">
+          <TabsTrigger value="tables" className="gap-1.5 px-2.5 py-1.5 text-xs">
             <TableIcon className="h-3.5 w-3.5" />
             Tables & Sheets
           </TabsTrigger>
-          <TabsTrigger value="issues" className="text-xs gap-1.5">
+          <TabsTrigger value="issues" className="gap-1.5 px-2.5 py-1.5 text-xs">
             <AlertCircle className="h-3.5 w-3.5" />
             Issues
           </TabsTrigger>
-          <TabsTrigger value="jobs" className="text-xs gap-1.5">
+          <TabsTrigger value="jobs" className="gap-1.5 px-2.5 py-1.5 text-xs">
             <Briefcase className="h-3.5 w-3.5" />
             Jobs
           </TabsTrigger>
@@ -233,50 +260,124 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 function InvoicesTab({ documentId }: { documentId: string }) {
   const { data: invoices, isLoading } = useDocumentInvoices(documentId)
 
-  if (isLoading) return <div className="h-48 bg-muted animate-pulse rounded-lg" />
+  if (isLoading)
+    return <div className="h-48 animate-pulse rounded-lg bg-muted" />
   if (!invoices || invoices.length === 0) {
-    return <EmptyState title="No invoices found" description="No invoices extracted from this document." />
+    return (
+      <EmptyState
+        title="No invoices found"
+        description="No invoices extracted from this document."
+      />
+    )
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card">
-      <Table>
-        <TableHeader className="bg-muted/40">
-          <TableRow>
-            <TableHead>Invoice #</TableHead>
-            <TableHead>Supplier</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Total Amount</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Version</TableHead>
-            <TableHead className="text-right">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invoices.map((inv) => (
-            <TableRow key={inv.id} className="hover:bg-muted/30">
-              <TableCell className="font-mono font-medium">{inv.invoice_number || "—"}</TableCell>
-              <TableCell>{inv.supplier_name || "—"}</TableCell>
-              <TableCell>{inv.invoice_date || "—"}</TableCell>
-              <TableCell>
-                <Money value={inv.total_amount} currency={inv.currency} />
-              </TableCell>
-              <TableCell>
-                <StatusBadge status={inv.review_status} />
-              </TableCell>
-              <TableCell className="font-mono text-xs">v{inv.version}</TableCell>
-              <TableCell className="text-right">
-                <Link href={`/invoices/${inv.id}`}>
-                  <Button size="sm" variant="outline" className="gap-1.5 text-xs">
-                    <Eye className="h-3.5 w-3.5" />
-                    Review Workspace
-                  </Button>
-                </Link>
-              </TableCell>
+    <div className="space-y-3">
+      {/* Mobile / Tablet Container Cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden">
+        {invoices.map((inv) => (
+          <div
+            key={inv.id}
+            className="flex flex-col justify-between space-y-3 rounded-lg border bg-card p-4 text-xs transition-colors hover:border-primary/40"
+          >
+            <div className="space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="font-mono text-xs font-semibold text-foreground">
+                    {inv.invoice_number || "—"}
+                  </span>
+                  <p className="mt-0.5 font-medium text-muted-foreground">
+                    {inv.supplier_name || "—"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <StatusBadge status={inv.review_status} />
+                  <span className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-muted-foreground">
+                    v{inv.version}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-border/50 pt-1 text-[11px]">
+                <span className="text-muted-foreground">
+                  {inv.invoice_date || "—"}
+                </span>
+                <span className="font-mono font-semibold text-foreground">
+                  <Money
+                    value={inv.total_amount}
+                    currency={inv.currency}
+                    raw={inv.currency_raw}
+                  />
+                </span>
+              </div>
+            </div>
+
+            <Link href={`/invoices/${inv.id}`}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 w-full gap-1.5 text-xs"
+              >
+                <Eye className="h-3 w-3" />
+                Review Workspace
+              </Button>
+            </Link>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden overflow-hidden rounded-lg border bg-card lg:block">
+        <Table>
+          <TableHeader className="bg-muted/40">
+            <TableRow>
+              <TableHead>Invoice #</TableHead>
+              <TableHead>Supplier</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Total Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Version</TableHead>
+              <TableHead className="text-right">Action</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {invoices.map((inv) => (
+              <TableRow key={inv.id} className="hover:bg-muted/30">
+                <TableCell className="font-mono font-medium">
+                  {inv.invoice_number || "—"}
+                </TableCell>
+                <TableCell>{inv.supplier_name || "—"}</TableCell>
+                <TableCell>{inv.invoice_date || "—"}</TableCell>
+                <TableCell>
+                  <Money
+                    value={inv.total_amount}
+                    currency={inv.currency}
+                    raw={inv.currency_raw}
+                  />
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={inv.review_status} />
+                </TableCell>
+                <TableCell className="font-mono text-xs">
+                  v{inv.version}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link href={`/invoices/${inv.id}`}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Review Workspace
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
@@ -285,30 +386,44 @@ function PagesTab({ documentId }: { documentId: string }) {
   const { data, isLoading } = useDocumentPages(documentId, { limit: 100 })
   const pages = data?.items ?? []
 
-  if (isLoading) return <div className="h-64 bg-muted animate-pulse rounded-lg" />
-  if (pages.length === 0) return <EmptyState title="No pages found" description="No pages parsed yet." />
+  if (isLoading)
+    return <div className="h-64 animate-pulse rounded-lg bg-muted" />
+  if (pages.length === 0)
+    return (
+      <EmptyState title="No pages found" description="No pages parsed yet." />
+    )
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
       {pages.map((p) => {
-        const imageUrl = documentsApi.getPageImageUrl(documentId, p.page_number, 300)
+        const imageUrl = documentsApi.getPageImageUrl(
+          documentId,
+          p.page_number,
+          300
+        )
         return (
-          <div key={p.id} className="border rounded-lg overflow-hidden bg-card flex flex-col group">
-            <div className="aspect-[3/4] relative bg-muted/40 overflow-hidden flex items-center justify-center">
+          <div
+            key={p.id}
+            className="group flex flex-col overflow-hidden rounded-lg border bg-card"
+          >
+            <div className="relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-muted/40">
+              <FileText className="pointer-events-none absolute h-8 w-8 text-muted-foreground/30" />
               <img
                 src={imageUrl}
                 alt={`Page ${p.page_number}`}
                 loading="lazy"
-                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                className="relative z-10 h-full w-full object-contain transition-transform duration-200 group-hover:scale-105"
                 onError={(e) => {
                   // Fallback placeholder if image endpoint fails
                   ;(e.target as HTMLElement).style.display = "none"
                 }}
               />
             </div>
-            <div className="p-2.5 flex items-center justify-between border-t text-xs">
+            <div className="flex items-center justify-between border-t p-2.5 text-xs">
               <span className="font-medium">Page {p.page_number}</span>
-              <span className="text-muted-foreground font-mono text-[10px]">{p.character_count} chars</span>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {p.character_count} chars
+              </span>
             </div>
           </div>
         )
@@ -319,12 +434,18 @@ function PagesTab({ documentId }: { documentId: string }) {
 
 function TextTab({ documentId }: { documentId: string }) {
   const [pageFrom, setPageFrom] = useState(1)
-  const { data: textData, isLoading } = useDocumentText(documentId, pageFrom, pageFrom + 4)
+  const { data: textData, isLoading } = useDocumentText(
+    documentId,
+    pageFrom,
+    pageFrom + 4
+  )
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Pages {pageFrom}–{pageFrom + 4}</span>
+        <span className="text-xs text-muted-foreground">
+          Pages {pageFrom}–{pageFrom + 4}
+        </span>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -347,19 +468,28 @@ function TextTab({ documentId }: { documentId: string }) {
       </div>
 
       {isLoading ? (
-        <div className="h-64 bg-muted animate-pulse rounded-lg" />
+        <div className="h-64 animate-pulse rounded-lg bg-muted" />
       ) : !textData || textData.length === 0 ? (
-        <EmptyState title="No text found" description="No text extracted for the requested page range." />
+        <EmptyState
+          title="No text found"
+          description="No text extracted for the requested page range."
+        />
       ) : (
         <div className="space-y-4">
           {textData.map((pt) => (
             <Card key={pt.page_number}>
-              <CardHeader className="py-2.5 px-4 bg-muted/30 border-b">
-                <CardTitle className="text-xs font-mono font-medium">Page {pt.page_number}</CardTitle>
+              <CardHeader className="border-b bg-muted/30 px-4 py-2.5">
+                <CardTitle className="font-mono text-xs font-medium">
+                  Page {pt.page_number}
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <pre className="font-mono text-xs whitespace-pre-wrap leading-relaxed text-foreground/90">
-                  {pt.text || <span className="text-muted-foreground italic">(Blank page)</span>}
+                <pre className="overflow-x-auto font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-foreground/90">
+                  {pt.text || (
+                    <span className="text-muted-foreground italic">
+                      (Blank page)
+                    </span>
+                  )}
                 </pre>
               </CardContent>
             </Card>
@@ -382,8 +512,15 @@ function TablesTab({ documentId }: { documentId: string }) {
     { limit: 50 }
   )
 
-  if (isLoading) return <div className="h-48 bg-muted animate-pulse rounded-lg" />
-  if (tables.length === 0) return <EmptyState title="No tables found" description="No tabular structures detected." />
+  if (isLoading)
+    return <div className="h-48 animate-pulse rounded-lg bg-muted" />
+  if (tables.length === 0)
+    return (
+      <EmptyState
+        title="No tables found"
+        description="No tabular structures detected."
+      />
+    )
 
   const activeTable = tables.find((t) => t.id === activeTableId) || tables[0]
 
@@ -397,52 +534,103 @@ function TablesTab({ documentId }: { documentId: string }) {
             variant={t.id === activeTableId ? "default" : "outline"}
             size="sm"
             onClick={() => setSelectedTableId(t.id)}
-            className="h-8 text-xs shrink-0 font-mono"
+            className="h-8 shrink-0 font-mono text-xs"
           >
-            {t.sheet_name || `Table ${t.table_index + 1}`} (page {t.page_number || "—"})
+            {t.sheet_name || `Table ${t.table_index + 1}`} (page{" "}
+            {t.page_number || "—"})
           </Button>
         ))}
       </div>
 
       {/* Row view */}
-      <div className="border rounded-lg overflow-x-auto bg-card">
-        {rowsLoading ? (
-          <div className="p-4 space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-8 bg-muted animate-pulse rounded" />
-            ))}
-          </div>
-        ) : (
-          <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow>
-                <TableHead className="w-16 font-mono text-xs">#</TableHead>
-                {activeTable?.header_json?.map((col: any, idx: number) => (
-                  <TableHead key={idx} className="font-medium text-xs">
-                    {String(col)}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rowsData?.items?.map((row) => (
-                <TableRow key={row.row_number}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{row.row_number}</TableCell>
+      {rowsLoading ? (
+        <div className="space-y-2 rounded-lg border bg-card p-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-8 animate-pulse rounded bg-muted" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Mobile / Tablet Container Cards */}
+          <div className="space-y-2 lg:hidden">
+            {rowsData?.items?.map((row) => (
+              <div
+                key={row.row_number}
+                className="space-y-1.5 rounded-lg border bg-card p-3 text-xs"
+              >
+                <div className="border-b pb-1 font-mono text-[11px] font-semibold text-muted-foreground">
+                  Row #{row.row_number}
+                </div>
+                <div className="space-y-1">
                   {activeTable?.header_json?.map((col: any, cIdx: number) => {
                     const colKey = String(col)
-                    const cellVal = (row.cells_json as any)?.[colKey] ?? (row.cells_json as any)?.[String(cIdx)]
+                    const cellVal =
+                      (row.cells_json as any)?.[colKey] ??
+                      (row.cells_json as any)?.[String(cIdx)]
+                    if (
+                      cellVal === null ||
+                      cellVal === undefined ||
+                      cellVal === ""
+                    )
+                      return null
                     return (
-                      <TableCell key={cIdx} className="text-xs">
-                        {cellVal === null || cellVal === undefined ? "" : String(cellVal)}
-                      </TableCell>
+                      <div
+                        key={cIdx}
+                        className="flex items-start justify-between gap-2 text-xs"
+                      >
+                        <span className="shrink-0 text-muted-foreground">
+                          {colKey}:
+                        </span>
+                        <span className="text-right font-medium break-all text-foreground">
+                          {String(cellVal)}
+                        </span>
+                      </div>
                     )
                   })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden overflow-x-auto rounded-lg border bg-card lg:block">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead className="w-16 font-mono text-xs">#</TableHead>
+                  {activeTable?.header_json?.map((col: any, idx: number) => (
+                    <TableHead key={idx} className="text-xs font-medium">
+                      {String(col)}
+                    </TableHead>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+              </TableHeader>
+              <TableBody>
+                {rowsData?.items?.map((row) => (
+                  <TableRow key={row.row_number}>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {row.row_number}
+                    </TableCell>
+                    {activeTable?.header_json?.map((col: any, cIdx: number) => {
+                      const colKey = String(col)
+                      const cellVal =
+                        (row.cells_json as any)?.[colKey] ??
+                        (row.cells_json as any)?.[String(cIdx)]
+                      return (
+                        <TableCell key={cIdx} className="text-xs">
+                          {cellVal === null || cellVal === undefined
+                            ? ""
+                            : String(cellVal)}
+                        </TableCell>
+                      )
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -451,39 +639,73 @@ function IssuesTab({ documentId }: { documentId: string }) {
   const { data, isLoading } = useDocumentValidations(documentId)
   const issues = data?.items ?? []
 
-  if (isLoading) return <div className="h-48 bg-muted animate-pulse rounded-lg" />
-  if (issues.length === 0) return <EmptyState title="No validation issues" description="No errors or warnings recorded." />
+  if (isLoading)
+    return <div className="h-48 animate-pulse rounded-lg bg-muted" />
+  if (issues.length === 0)
+    return (
+      <EmptyState
+        title="No validation issues"
+        description="No errors or warnings recorded."
+      />
+    )
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card">
-      <Table>
-        <TableHeader className="bg-muted/40">
-          <TableRow>
-            <TableHead>Severity</TableHead>
-            <TableHead>Rule Code</TableHead>
-            <TableHead>Message</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Field</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {issues.map((issue) => (
-            <TableRow key={issue.id}>
-              <TableCell>
-                <StatusBadge status={issue.severity} />
-              </TableCell>
-              <TableCell className="font-mono text-xs font-medium">{issue.rule_code}</TableCell>
-              <TableCell className="text-xs">{issue.message}</TableCell>
-              <TableCell>
-                <StatusBadge status={issue.resolution_status} />
-              </TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {issue.field_path || "—"}
-              </TableCell>
+    <div className="space-y-3">
+      {/* Mobile / Tablet Container Cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden">
+        {issues.map((issue) => (
+          <div
+            key={issue.id}
+            className="space-y-2 rounded-lg border bg-card p-3.5 text-xs"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-mono text-xs font-semibold text-foreground">
+                {issue.rule_code}
+              </span>
+              <StatusBadge status={issue.severity} />
+            </div>
+            <p className="text-xs text-foreground/90">{issue.message}</p>
+            <div className="flex items-center justify-between border-t pt-2 text-[11px] text-muted-foreground">
+              <span className="font-mono">{issue.field_path || "General"}</span>
+              <StatusBadge status={issue.resolution_status} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden overflow-hidden rounded-lg border bg-card lg:block">
+        <Table>
+          <TableHeader className="bg-muted/40">
+            <TableRow>
+              <TableHead>Severity</TableHead>
+              <TableHead>Rule Code</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Field</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {issues.map((issue) => (
+              <TableRow key={issue.id}>
+                <TableCell>
+                  <StatusBadge status={issue.severity} />
+                </TableCell>
+                <TableCell className="font-mono text-xs font-medium">
+                  {issue.rule_code}
+                </TableCell>
+                <TableCell className="text-xs">{issue.message}</TableCell>
+                <TableCell>
+                  <StatusBadge status={issue.resolution_status} />
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {issue.field_path || "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
@@ -491,49 +713,111 @@ function IssuesTab({ documentId }: { documentId: string }) {
 function JobsTab({ documentId }: { documentId: string }) {
   const { data: jobs, isLoading } = useDocumentJobs(documentId)
 
-  if (isLoading) return <div className="h-48 bg-muted animate-pulse rounded-lg" />
-  if (!jobs || jobs.length === 0) return <EmptyState title="No jobs recorded" description="No background jobs found." />
+  if (isLoading)
+    return <div className="h-48 animate-pulse rounded-lg bg-muted" />
+  if (!jobs || jobs.length === 0)
+    return (
+      <EmptyState
+        title="No jobs recorded"
+        description="No background jobs found."
+      />
+    )
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card">
-      <Table>
-        <TableHeader className="bg-muted/40">
-          <TableRow>
-            <TableHead>Job Type</TableHead>
-            <TableHead>State</TableHead>
-            <TableHead>Progress</TableHead>
-            <TableHead>Pages</TableHead>
-            <TableHead>Attempt</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="text-right">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {jobs.map((job) => (
-            <TableRow key={job.id}>
-              <TableCell className="font-mono text-xs font-medium">{job.job_type}</TableCell>
-              <TableCell>
-                <StatusBadge status={job.state} />
-              </TableCell>
-              <TableCell className="font-mono text-xs">{job.progress_percent}%</TableCell>
-              <TableCell className="text-xs">
-                {job.pages_completed} / {job.pages_total}
-              </TableCell>
-              <TableCell className="font-mono text-xs">#{job.attempt_number}</TableCell>
-              <TableCell>
-                <DateTime value={job.created_at} />
-              </TableCell>
-              <TableCell className="text-right">
-                <Link href={`/jobs/${job.id}`}>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-                    Inspect <ExternalLink className="h-3 w-3" />
-                  </Button>
-                </Link>
-              </TableCell>
+    <div className="space-y-3">
+      {/* Mobile / Tablet Container Cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden">
+        {jobs.map((job) => (
+          <div
+            key={job.id}
+            className="space-y-2.5 rounded-lg border bg-card p-3.5 text-xs"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <span className="font-mono text-xs font-semibold uppercase">
+                  {job.job_type}
+                </span>
+                <span className="block font-mono text-[10px] text-muted-foreground">
+                  Attempt #{job.attempt_number}
+                </span>
+              </div>
+              <StatusBadge status={job.state} />
+            </div>
+            <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
+              <span>
+                {job.pages_completed} / {job.pages_total} pages
+              </span>
+              <span className="font-semibold text-foreground">
+                {job.progress_percent}%
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-t pt-2 text-[11px] text-muted-foreground">
+              <DateTime value={job.created_at} />
+              <Link href={`/jobs/${job.id}`}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                >
+                  Inspect <ExternalLink className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden overflow-hidden rounded-lg border bg-card lg:block">
+        <Table>
+          <TableHeader className="bg-muted/40">
+            <TableRow>
+              <TableHead>Job Type</TableHead>
+              <TableHead>State</TableHead>
+              <TableHead>Progress</TableHead>
+              <TableHead>Pages</TableHead>
+              <TableHead>Attempt</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Action</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {jobs.map((job) => (
+              <TableRow key={job.id}>
+                <TableCell className="font-mono text-xs font-medium">
+                  {job.job_type}
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={job.state} />
+                </TableCell>
+                <TableCell className="font-mono text-xs">
+                  {job.progress_percent}%
+                </TableCell>
+                <TableCell className="text-xs">
+                  {job.pages_completed} / {job.pages_total}
+                </TableCell>
+                <TableCell className="font-mono text-xs">
+                  #{job.attempt_number}
+                </TableCell>
+                <TableCell>
+                  <DateTime value={job.created_at} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link href={`/jobs/${job.id}`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                    >
+                      Inspect <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }

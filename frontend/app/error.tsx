@@ -17,17 +17,18 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-background">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400 mb-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
         <AlertCircle className="h-6 w-6 stroke-[1.5]" />
       </div>
       <h2 className="text-xl font-bold tracking-tight">Something went wrong</h2>
-      <p className="mt-2 text-sm text-muted-foreground max-w-md">
-        {error.message || "An unexpected error occurred while rendering the page."}
+      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+        {error.message ||
+          "An unexpected error occurred while rendering the page."}
       </p>
 
       {error.digest && (
-        <div className="mt-3 px-2 py-1 rounded bg-muted text-[11px] font-mono text-muted-foreground">
+        <div className="mt-3 rounded bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground">
           Digest: {error.digest}
         </div>
       )}
@@ -45,4 +46,3 @@ export default function GlobalError({
     </div>
   )
 }
-

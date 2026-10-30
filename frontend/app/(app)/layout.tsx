@@ -14,14 +14,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="flex flex-col min-h-screen">
+      <SidebarInset className="flex min-h-screen flex-col">
         <AppHeader />
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 lg:p-8">
           {isLoading ? (
             <div className="space-y-4">
-              <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-              <div className="h-32 bg-muted animate-pulse rounded-lg" />
-              <div className="h-64 bg-muted animate-pulse rounded-lg" />
+              <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+              <div className="h-32 animate-pulse rounded-lg bg-muted" />
+              <div className="h-64 animate-pulse rounded-lg bg-muted" />
             </div>
           ) : (
             children
@@ -33,4 +33,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   )
 }
-

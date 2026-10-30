@@ -5,7 +5,14 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useLogin, usePublicConfig } from "@/features/auth/hooks"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -50,16 +57,19 @@ function LoginForm() {
   const isRegistrationOpen = config?.registration_mode === "open"
 
   return (
-    <Card className="shadow-lg border-border/80">
+    <Card className="border-border/80 shadow-lg">
       <CardHeader className="space-y-1">
         <CardTitle className="text-xl">Sign in</CardTitle>
-        <CardDescription>Enter your email and password to access your workspace</CardDescription>
+        <CardDescription>
+          Enter your email and password to access your workspace
+        </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
           {error && (
-            <div className="p-3 text-xs rounded-md bg-destructive/15 text-destructive font-medium border border-destructive/20">
-              {(error as any)?.message || "Failed to sign in. Please verify your credentials."}
+            <div className="rounded-md border border-destructive/20 bg-destructive/15 p-3 text-xs font-medium text-destructive">
+              {(error as any)?.message ||
+                "Failed to sign in. Please verify your credentials."}
             </div>
           )}
 
@@ -89,7 +99,9 @@ function LoginForm() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-xs text-destructive">{errors.password.message}</p>
+              <p className="text-xs text-destructive">
+                {errors.password.message}
+              </p>
             )}
           </div>
         </CardContent>
@@ -108,20 +120,28 @@ function LoginForm() {
           {isRegistrationOpen && (
             <p className="text-center text-xs text-muted-foreground">
               New organization?{" "}
-              <Link href="/register" className="font-medium text-primary underline underline-offset-4">
+              <Link
+                href="/register"
+                className="font-medium text-primary underline underline-offset-4"
+              >
                 Register organization
               </Link>
             </p>
           )}
         </CardFooter>
       </form>
+      <span className="text-center text-xs text-destructive">
+        for testing purpose i keep the auth open.
+      </span>
     </Card>
   )
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="h-64 rounded-lg bg-card animate-pulse" />}>
+    <Suspense
+      fallback={<div className="h-64 animate-pulse rounded-lg bg-card" />}
+    >
       <LoginForm />
     </Suspense>
   )

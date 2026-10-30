@@ -5,7 +5,14 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useRegister, usePublicConfig } from "@/features/auth/hooks"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +20,9 @@ import { Loader2 } from "lucide-react"
 import Link from "next/link"
 
 const registerSchema = z.object({
-  organization_name: z.string().min(2, "Organization name must be at least 2 characters"),
+  organization_name: z
+    .string()
+    .min(2, "Organization name must be at least 2 characters"),
   full_name: z.string().min(2, "Full name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(12, "Password must be at least 12 characters"),
@@ -49,7 +58,8 @@ export default function RegisterPage() {
         <CardHeader>
           <CardTitle>Registration Closed</CardTitle>
           <CardDescription>
-            Public organization registration is currently disabled by administrator policy.
+            Public organization registration is currently disabled by
+            administrator policy.
           </CardDescription>
         </CardHeader>
         <CardFooter>
@@ -64,16 +74,19 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className="shadow-lg border-border/80">
+    <Card className="border-border/80 shadow-lg">
       <CardHeader className="space-y-1">
         <CardTitle className="text-xl">Create Organization</CardTitle>
-        <CardDescription>Set up a new organization and administrator account</CardDescription>
+        <CardDescription>
+          Set up a new organization and administrator account
+        </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
           {error && (
-            <div className="p-3 text-xs rounded-md bg-destructive/15 text-destructive font-medium border border-destructive/20">
-              {(error as any)?.message || "Registration failed. Please check the provided details."}
+            <div className="rounded-md border border-destructive/20 bg-destructive/15 p-3 text-xs font-medium text-destructive">
+              {(error as any)?.message ||
+                "Registration failed. Please check the provided details."}
             </div>
           )}
 
@@ -86,7 +99,9 @@ export default function RegisterPage() {
               {...register("organization_name")}
             />
             {errors.organization_name && (
-              <p className="text-xs text-destructive">{errors.organization_name.message}</p>
+              <p className="text-xs text-destructive">
+                {errors.organization_name.message}
+              </p>
             )}
           </div>
 
@@ -100,7 +115,9 @@ export default function RegisterPage() {
               {...register("full_name")}
             />
             {errors.full_name && (
-              <p className="text-xs text-destructive">{errors.full_name.message}</p>
+              <p className="text-xs text-destructive">
+                {errors.full_name.message}
+              </p>
             )}
           </div>
 
@@ -120,7 +137,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Master Password (min 12 characters)</Label>
+            <Label htmlFor="password">
+              Master Password (min 12 characters)
+            </Label>
             <Input
               id="password"
               type="password"
@@ -130,7 +149,9 @@ export default function RegisterPage() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-xs text-destructive">{errors.password.message}</p>
+              <p className="text-xs text-destructive">
+                {errors.password.message}
+              </p>
             )}
           </div>
         </CardContent>
@@ -148,13 +169,18 @@ export default function RegisterPage() {
 
           <p className="text-center text-xs text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-primary underline underline-offset-4">
+            <Link
+              href="/login"
+              className="font-medium text-primary underline underline-offset-4"
+            >
               Sign in
             </Link>
           </p>
         </CardFooter>
       </form>
+      <span className="text-center text-xs text-destructive">
+        for testing purpose i keep the auth open.
+      </span>
     </Card>
   )
 }
-

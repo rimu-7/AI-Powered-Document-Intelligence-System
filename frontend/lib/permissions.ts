@@ -17,7 +17,10 @@ export const Permissions = {
 
 export type PermissionKey = keyof typeof Permissions
 
-export function hasPermission(role: Role | string | undefined | null, permission: PermissionKey): boolean {
+export function hasPermission(
+  role: Role | string | undefined | null,
+  permission: PermissionKey
+): boolean {
   if (!role) return false
   const allowed = Permissions[permission] as readonly string[]
   return allowed.includes(role)
@@ -34,4 +37,3 @@ export function canReview(role?: string | null): boolean {
 export function canAdmin(role?: string | null): boolean {
   return role === "ADMIN"
 }
-

@@ -25,4 +25,3 @@ describe("Token Refresh Single Flight", () => {
     expect(res4.ok).toBe(true)
   })
 })
-

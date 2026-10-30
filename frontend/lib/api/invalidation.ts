@@ -43,10 +43,18 @@ export async function invalidateForMutation(
     case "reprocess_document":
       if (context?.documentId) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: qk.documents.detail(context.documentId) }),
-          queryClient.invalidateQueries({ queryKey: qk.documents.jobs(context.documentId) }),
-          queryClient.invalidateQueries({ queryKey: qk.documents.invoices(context.documentId) }),
-          queryClient.invalidateQueries({ queryKey: qk.documents.validations(context.documentId) }),
+          queryClient.invalidateQueries({
+            queryKey: qk.documents.detail(context.documentId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.documents.jobs(context.documentId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.documents.invoices(context.documentId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.documents.validations(context.documentId),
+          }),
           queryClient.invalidateQueries({ queryKey: qk.documents.all() }),
           queryClient.invalidateQueries({ queryKey: qk.jobs.all() }),
         ])
@@ -64,7 +72,9 @@ export async function invalidateForMutation(
     case "retry_job":
     case "cancel_job":
       if (context?.jobId) {
-        await queryClient.invalidateQueries({ queryKey: qk.jobs.detail(context.jobId) })
+        await queryClient.invalidateQueries({
+          queryKey: qk.jobs.detail(context.jobId),
+        })
       }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: qk.jobs.all() }),
@@ -77,17 +87,31 @@ export async function invalidateForMutation(
     case "revalidate_invoice":
       if (context?.invoiceId) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: qk.invoices.detail(context.invoiceId) }),
-          queryClient.invalidateQueries({ queryKey: qk.invoices.validations(context.invoiceId) }),
-          queryClient.invalidateQueries({ queryKey: qk.invoices.history(context.invoiceId) }),
-          queryClient.invalidateQueries({ queryKey: qk.invoices.lineItems(context.invoiceId) }),
+          queryClient.invalidateQueries({
+            queryKey: qk.invoices.detail(context.invoiceId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.invoices.validations(context.invoiceId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.invoices.history(context.invoiceId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.invoices.lineItems(context.invoiceId),
+          }),
         ])
       }
       if (context?.documentId) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: qk.documents.detail(context.documentId) }),
-          queryClient.invalidateQueries({ queryKey: qk.documents.invoices(context.documentId) }),
-          queryClient.invalidateQueries({ queryKey: qk.documents.validations(context.documentId) }),
+          queryClient.invalidateQueries({
+            queryKey: qk.documents.detail(context.documentId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.documents.invoices(context.documentId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.documents.validations(context.documentId),
+          }),
         ])
       }
       await queryClient.invalidateQueries({ queryKey: qk.reviews.all() })
@@ -97,13 +121,21 @@ export async function invalidateForMutation(
     case "reject_invoice":
       if (context?.invoiceId) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: qk.invoices.detail(context.invoiceId) }),
-          queryClient.invalidateQueries({ queryKey: qk.invoices.history(context.invoiceId) }),
+          queryClient.invalidateQueries({
+            queryKey: qk.invoices.detail(context.invoiceId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: qk.invoices.history(context.invoiceId),
+          }),
         ])
       }
       if (context?.documentId) {
-        await queryClient.invalidateQueries({ queryKey: qk.documents.detail(context.documentId) })
-        await queryClient.invalidateQueries({ queryKey: qk.documents.invoices(context.documentId) })
+        await queryClient.invalidateQueries({
+          queryKey: qk.documents.detail(context.documentId),
+        })
+        await queryClient.invalidateQueries({
+          queryKey: qk.documents.invoices(context.documentId),
+        })
       }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: qk.reviews.all() }),
@@ -114,7 +146,9 @@ export async function invalidateForMutation(
     case "claim_review":
       await queryClient.invalidateQueries({ queryKey: qk.reviews.all() })
       if (context?.reviewId) {
-        await queryClient.invalidateQueries({ queryKey: qk.reviews.detail(context.reviewId) })
+        await queryClient.invalidateQueries({
+          queryKey: qk.reviews.detail(context.reviewId),
+        })
       }
       break
 
@@ -133,4 +167,3 @@ export async function invalidateForMutation(
       break
   }
 }
-

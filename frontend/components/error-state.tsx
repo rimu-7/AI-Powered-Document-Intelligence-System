@@ -27,15 +27,19 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-rose-200/50 bg-rose-50/20 dark:bg-rose-950/10 p-8 text-center animate-in fade-in-50",
+        "flex min-h-[280px] animate-in flex-col items-center justify-center rounded-lg border border-rose-200/50 bg-rose-50/20 p-8 text-center fade-in-50 dark:bg-rose-950/10",
         className
       )}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400 mb-4">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
         <AlertCircle className="h-6 w-6 stroke-[1.5]" />
       </div>
-      <h3 className="text-base font-medium text-foreground tracking-tight">Something went wrong</h3>
-      <p className="mt-1.5 max-w-sm text-sm text-muted-foreground leading-normal">{message}</p>
+      <h3 className="text-base font-medium tracking-tight text-foreground">
+        Something went wrong
+      </h3>
+      <p className="mt-1.5 max-w-sm text-sm leading-normal text-muted-foreground">
+        {message}
+      </p>
 
       {requestId && (
         <div className="mt-3 flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-1 font-mono text-xs text-muted-foreground">
@@ -43,7 +47,7 @@ export function ErrorState({
           <button
             onClick={copyRequestId}
             type="button"
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground transition-colors hover:text-foreground"
             title="Copy Request ID"
           >
             <Copy className="h-3.5 w-3.5" />
@@ -52,7 +56,12 @@ export function ErrorState({
       )}
 
       {onRetry && (
-        <Button onClick={onRetry} variant="outline" size="sm" className="mt-4 gap-2">
+        <Button
+          onClick={onRetry}
+          variant="outline"
+          size="sm"
+          className="mt-4 gap-2"
+        >
           <RefreshCw className="h-3.5 w-3.5" />
           Retry
         </Button>
@@ -60,4 +69,3 @@ export function ErrorState({
     </div>
   )
 }
-

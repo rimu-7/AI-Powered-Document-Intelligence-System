@@ -8,20 +8,18 @@ export interface SnippetPart {
 export function parseSnippet(text: string): SnippetPart[] {
   if (!text) return []
   const parts = text.split(/(«[^»]+»)/g)
-  return parts
-    .filter(Boolean)
-    .map((part) => {
-      if (part.startsWith("«") && part.endsWith("»")) {
-        return {
-          text: part.slice(1, -1),
-          isMatch: true,
-        }
-      }
+  return parts.filter(Boolean).map((part) => {
+    if (part.startsWith("«") && part.endsWith("»")) {
       return {
-        text: part,
-        isMatch: false,
+        text: part.slice(1, -1),
+        isMatch: true,
       }
-    })
+    }
+    return {
+      text: part,
+      isMatch: false,
+    }
+  })
 }
 
 export function RenderSnippet({ text }: { text: string }) {
@@ -30,13 +28,13 @@ export function RenderSnippet({ text }: { text: string }) {
   const parts = parseSnippet(text)
 
   return (
-    <p className="text-xs text-foreground/80 leading-relaxed font-mono">
+    <p className="font-mono text-xs leading-relaxed text-foreground/80">
       {parts.map((part, idx) => {
         if (part.isMatch) {
           return (
             <mark
               key={idx}
-              className="bg-amber-200 dark:bg-amber-900/60 text-foreground font-semibold px-0.5 rounded"
+              className="rounded bg-amber-200 px-0.5 font-semibold text-foreground dark:bg-amber-900/60"
             >
               {part.text}
             </mark>
@@ -47,4 +45,3 @@ export function RenderSnippet({ text }: { text: string }) {
     </p>
   )
 }
-

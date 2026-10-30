@@ -24,9 +24,7 @@ export function renderWithProviders(
 
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     )
   }
 
@@ -35,4 +33,3 @@ export function renderWithProviders(
     ...render(ui, { wrapper: Wrapper, ...options }),
   }
 }
-

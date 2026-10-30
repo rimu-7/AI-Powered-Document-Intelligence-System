@@ -52,13 +52,20 @@ export function normalizeError(err: unknown): ApiError {
     const response = axiosErr.response
     const status = response?.status || 500
     const retryAfterHeader = response?.headers?.["retry-after"]
-    const retryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : undefined
+    const retryAfter = retryAfterHeader
+      ? parseInt(retryAfterHeader, 10)
+      : undefined
 
     const data = response?.data as any
-    const errObj = data?.error || (typeof data?.detail === "object" ? data?.detail : undefined)
+    const errObj =
+      data?.error ||
+      (typeof data?.detail === "object" ? data?.detail : undefined)
     if (errObj && typeof errObj === "object") {
-      let message = errObj.message || errObj.msg || "An unexpected error occurred"
-      const rawDetails = errObj.details ?? (Array.isArray(data?.detail) ? data?.detail : undefined)
+      let message =
+        errObj.message || errObj.msg || "An unexpected error occurred"
+      const rawDetails =
+        errObj.details ??
+        (Array.isArray(data?.detail) ? data?.detail : undefined)
       if (Array.isArray(rawDetails) && rawDetails.length > 0) {
         const detailMsgs = rawDetails
           .map((d: any) => d?.message || d?.msg)
@@ -110,4 +117,3 @@ export function normalizeError(err: unknown): ApiError {
     message: String(err) || "Unknown error occurred",
   })
 }
-

@@ -5,10 +5,23 @@ import { PageHeader } from "@/components/page-header"
 import { useCurrentUser } from "@/features/auth/hooks"
 import { useSystemHealth } from "@/features/admin/hooks"
 import { canAdmin } from "@/lib/permissions"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
 import { EmptyState } from "@/components/empty-state"
 import { ErrorState } from "@/components/error-state"
-import { Database, HardDrive, Cpu, ShieldAlert, CheckCircle2, AlertCircle } from "lucide-react"
+import {
+  Database,
+  HardDrive,
+  Cpu,
+  ShieldAlert,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react"
 
 export default function SystemHealthAdminPage() {
   const { data: user } = useCurrentUser()
@@ -26,7 +39,10 @@ export default function SystemHealthAdminPage() {
     )
   }
 
-  const isHealthy = health?.status === "ready" || health?.status === "healthy" || health?.status === "ok"
+  const isHealthy =
+    health?.status === "ready" ||
+    health?.status === "healthy" ||
+    health?.status === "ok"
 
   return (
     <div className="space-y-6">
@@ -36,9 +52,9 @@ export default function SystemHealthAdminPage() {
       />
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
+            <div key={i} className="h-32 animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
       ) : isError ? (
@@ -52,52 +68,58 @@ export default function SystemHealthAdminPage() {
           <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div className="space-y-1">
-                <CardTitle className="text-base font-semibold">Overall System Status</CardTitle>
+                <CardTitle className="text-base font-semibold">
+                  Overall System Status
+                </CardTitle>
                 <CardDescription className="text-xs">
                   Backend API, background worker pool, and shared data tiers
                 </CardDescription>
               </div>
               <div
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wider uppercase ${
                   isHealthy
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                    : "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                    ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                    : "border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300"
                 }`}
               >
-                {isHealthy ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                {isHealthy ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <AlertCircle className="h-4 w-4" />
+                )}
                 {health?.status || "UNKNOWN"}
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-                <Card className="p-4 border bg-muted/20 space-y-2">
-                  <div className="flex items-center gap-2 text-foreground font-medium text-xs">
+              <div className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-3">
+                <Card className="space-y-2 border bg-muted/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                     <Database className="h-4 w-4 text-primary" />
                     <span>PostgreSQL Database</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Connected & Responsive
                   </div>
                 </Card>
 
-                <Card className="p-4 border bg-muted/20 space-y-2">
-                  <div className="flex items-center gap-2 text-foreground font-medium text-xs">
+                <Card className="space-y-2 border bg-muted/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                     <Cpu className="h-4 w-4 text-primary" />
                     <span>Redis Queue & Locks</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Operating Normatively
                   </div>
                 </Card>
 
-                <Card className="p-4 border bg-muted/20 space-y-2">
-                  <div className="flex items-center gap-2 text-foreground font-medium text-xs">
+                <Card className="space-y-2 border bg-muted/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                     <HardDrive className="h-4 w-4 text-primary" />
                     <span>Object Storage (S3 / MinIO)</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Buckets Accessible
                   </div>

@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api/client"
 import type { components } from "@/lib/api/schema"
+import type { CurrencyCode } from "@/lib/api/types"
 
 export type SearchResponse = components["schemas"]["SearchResponse"]
 export type SearchHit = components["schemas"]["SearchHit"]
@@ -7,7 +8,7 @@ export type SearchRequest = components["schemas"]["SearchRequest"]
 
 export interface SearchFilters {
   supplier?: string
-  currency?: string
+  currency?: CurrencyCode
   date_from?: string
   date_to?: string
   amount_min?: string
@@ -19,7 +20,12 @@ export interface SearchFilters {
 }
 
 export const searchApi = {
-  async keyword(query: string, filters?: SearchFilters, limit = 50, offset = 0): Promise<SearchResponse> {
+  async keyword(
+    query: string,
+    filters?: SearchFilters,
+    limit = 50,
+    offset = 0
+  ): Promise<SearchResponse> {
     const res = await apiClient.get<SearchResponse>("/search/keyword", {
       params: {
         q: query,
@@ -32,7 +38,10 @@ export const searchApi = {
   },
 
   async semantic(payload: SearchRequest): Promise<SearchResponse> {
-    const res = await apiClient.post<SearchResponse>("/search/semantic", payload)
+    const res = await apiClient.post<SearchResponse>(
+      "/search/semantic",
+      payload
+    )
     return res.data
   },
 

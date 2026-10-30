@@ -43,14 +43,20 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>
+            {cancelText}
+          </AlertDialogCancel>
           <AlertDialogAction
             disabled={isLoading}
             onClick={(e) => {
               e.preventDefault()
               onConfirm()
             }}
-            className={isDestructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            className={
+              isDestructive
+                ? "text-destructive-foreground bg-destructive hover:bg-destructive/90"
+                : ""
+            }
           >
             {isLoading ? "Processing..." : confirmText}
           </AlertDialogAction>
@@ -59,4 +65,3 @@ export function ConfirmDialog({
     </AlertDialog>
   )
 }
-

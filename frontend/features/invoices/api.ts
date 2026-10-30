@@ -26,29 +26,49 @@ export const invoicesApi = {
     return res.data
   },
 
-  async validations(id: string, params?: { severity?: string }): Promise<ValidationIssueOut[]> {
-    const res = await apiClient.get<any>(`/invoices/${id}/validations`, { params })
+  async validations(
+    id: string,
+    params?: { severity?: string }
+  ): Promise<ValidationIssueOut[]> {
+    const res = await apiClient.get<any>(`/invoices/${id}/validations`, {
+      params,
+    })
     return Array.isArray(res.data) ? res.data : (res.data?.items ?? [])
   },
 
-  async correct(id: string, payload: CorrectionRequest): Promise<CorrectionResponse> {
-    const res = await apiClient.patch<CorrectionResponse>(`/invoices/${id}/corrections`, payload)
+  async correct(
+    id: string,
+    payload: CorrectionRequest
+  ): Promise<CorrectionResponse> {
+    const res = await apiClient.patch<CorrectionResponse>(
+      `/invoices/${id}/corrections`,
+      payload
+    )
     return res.data
   },
 
   async approve(id: string, payload: ApprovalRequest): Promise<InvoiceDetail> {
-    const res = await apiClient.post<InvoiceDetail>(`/invoices/${id}/approve`, payload)
+    const res = await apiClient.post<InvoiceDetail>(
+      `/invoices/${id}/approve`,
+      payload
+    )
     return res.data
   },
 
   async reject(id: string, payload: RejectionRequest): Promise<InvoiceDetail> {
-    const res = await apiClient.post<InvoiceDetail>(`/invoices/${id}/reject`, payload)
+    const res = await apiClient.post<InvoiceDetail>(
+      `/invoices/${id}/reject`,
+      payload
+    )
     return res.data
   },
 
-  async revalidate(id: string): Promise<{ job_id: string; status_url: string }> {
-    const res = await apiClient.post<{ job_id: string; status_url: string }>(`/invoices/${id}/revalidate`)
+  async revalidate(
+    id: string
+  ): Promise<{ job_id: string; status_url: string }> {
+    const res = await apiClient.post<{ job_id: string; status_url: string }>(
+      `/invoices/${id}/revalidate`
+    )
     return res.data
   },
 }
-

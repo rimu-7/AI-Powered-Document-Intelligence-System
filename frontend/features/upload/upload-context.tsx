@@ -43,11 +43,16 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
 
   const activeCount = items.filter(
-    (i) => i.status === "uploading" || i.status === "verifying" || i.status === "queued"
+    (i) =>
+      i.status === "uploading" ||
+      i.status === "verifying" ||
+      i.status === "queued"
   ).length
 
   const updateItem = useCallback((id: string, updates: Partial<UploadItem>) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)))
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    )
   }, [])
 
   const processFile = useCallback(
@@ -59,7 +64,10 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         let directAvailable = true
 
         try {
-          ticket = await uploadApi.createDirectUpload(item.file.name, item.file.size)
+          ticket = await uploadApi.createDirectUpload(
+            item.file.name,
+            item.file.size
+          )
         } catch (err: any) {
           if (err.status === 409 || err.code === "DIRECT_UPLOAD_UNAVAILABLE") {
             directAvailable = false
@@ -77,12 +85,18 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
 
         if (directAvailable && ticket) {
           // Direct upload via presigned / signed URL
-          await uploadApi.uploadToSignedUrl(ticket.upload_url, item.file, (pct) => {
-            updateItem(item.id, { progress: pct })
-          })
+          await uploadApi.uploadToSignedUrl(
+            ticket.upload_url,
+            item.file,
+            (pct) => {
+              updateItem(item.id, { progress: pct })
+            }
+          )
 
           updateItem(item.id, { status: "verifying", progress: 100 })
-          const completeRes = await uploadApi.completeDirectUpload(ticket.upload_id)
+          const completeRes = await uploadApi.completeDirectUpload(
+            ticket.upload_id
+          )
 
           updateItem(item.id, {
             status: "done",
@@ -99,9 +113,11 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
 
           const firstResult = fallbackRes?.results?.[0]
           if (firstResult?.status === "rejected") {
-            const errMsg = typeof firstResult.error === "object" && firstResult.error !== null
-              ? (firstResult.error as any).message
-              : "Upload rejected"
+            const errMsg =
+              typeof firstResult.error === "object" &&
+              firstResult.error !== null
+                ? (firstResult.error as any).message
+                : "Upload rejected"
             updateItem(item.id, {
               status: "rejected",
               error: errMsg || "Upload rejected",
@@ -129,7 +145,10 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
   const addFiles = useCallback(
     (files: File[]) => {
       const newItems: UploadItem[] = files.map((file) => ({
-        id: typeof crypto !== "undefined" ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+        id:
+          typeof crypto !== "undefined"
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()}`,
         file,
         progress: 0,
         status: "queued",
@@ -170,7 +189,14 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const clearFinished = useCallback(() => {
-    setItems((prev) => prev.filter((i) => i.status === "uploading" || i.status === "queued" || i.status === "verifying"))
+    setItems((prev) =>
+      prev.filter(
+        (i) =>
+          i.status === "uploading" ||
+          i.status === "queued" ||
+          i.status === "verifying"
+      )
+    )
   }, [])
 
   return (

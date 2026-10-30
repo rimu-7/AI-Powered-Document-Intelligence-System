@@ -24,9 +24,15 @@ describe("invalidation map", () => {
       documentId: "doc-456",
     })
 
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.invoices.detail("inv-123") })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.invoices.history("inv-123") })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.documents.invoices("doc-456") })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: qk.invoices.detail("inv-123"),
+    })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: qk.invoices.history("inv-123"),
+    })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: qk.documents.invoices("doc-456"),
+    })
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.reviews.all() })
   })
 
@@ -41,4 +47,3 @@ describe("invalidation map", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.admin.users() })
   })
 })
-

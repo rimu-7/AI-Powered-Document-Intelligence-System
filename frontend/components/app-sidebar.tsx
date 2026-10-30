@@ -56,7 +56,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Review Queue",
       url: "/reviews",
       icon: FileCheck,
-      isActive: pathname.startsWith("/reviews") || pathname.startsWith("/invoices"),
+      isActive:
+        pathname.startsWith("/reviews") || pathname.startsWith("/invoices"),
     },
     {
       title: "Processing Jobs",
@@ -107,14 +108,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className="border-b px-4 py-3">
+      <SidebarHeader className="border-b px-4 py-2.5">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-            <Layers className="h-4 w-4" />
+          <div className="flex h-8 w-8 items-center justify-center text-sm font-bold text-primary-foreground shadow-sm">
+            <Layers className="h-6 w-6" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold tracking-tight">DocIntel AI</span>
-            <span className="text-[10px] text-muted-foreground font-mono">Financial Intel</span>
+            <span className="text-sm font-semibold tracking-tight">
+              DocIntel AI
+            </span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              Financial Intel
+            </span>
           </div>
         </Link>
       </SidebarHeader>
@@ -166,13 +171,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className="border-t p-3">
         {user && (
           <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-            <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium uppercase">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium uppercase">
               {user.email?.[0]?.toUpperCase() ?? "U"}
             </div>
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs font-medium truncate">{user.full_name || user.email || "User"}</span>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-xs font-medium">
+                {user.full_name || user.email || "User"}
+              </span>
               <div className="flex items-center gap-1.5">
-                <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 uppercase tracking-wide">
+                <Badge
+                  variant="outline"
+                  className="h-3.5 px-1 py-0 text-[9px] tracking-wide uppercase"
+                >
                   {user.role}
                 </Badge>
               </div>

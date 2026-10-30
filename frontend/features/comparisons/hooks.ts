@@ -1,14 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  comparisonsApi,
-  ComparisonCreate,
-  ReconciliationCreate,
-} from "./api"
+import { comparisonsApi, ComparisonCreate, ReconciliationCreate } from "./api"
 import { qk } from "@/lib/api/keys"
 import { invalidateForMutation } from "@/lib/api/invalidation"
 import { toast } from "sonner"
 
-export function useComparisonsList(params?: { limit?: number; offset?: number }) {
+export function useComparisonsList(params?: {
+  limit?: number
+  offset?: number
+}) {
   return useQuery({
     queryKey: qk.comparisons.list(params),
     queryFn: () => comparisonsApi.list(params),
@@ -33,7 +32,10 @@ export function useComparison(id: string) {
   })
 }
 
-export function useComparisonFindings(id: string, params?: { limit?: number; offset?: number; status?: string }) {
+export function useComparisonFindings(
+  id: string,
+  params?: { limit?: number; offset?: number; status?: string }
+) {
   return useQuery({
     queryKey: qk.comparisons.findings(id, params),
     queryFn: () => comparisonsApi.comparisonFindings(id, params),
@@ -59,7 +61,12 @@ export function useReconciliation(id: string) {
 
 export function useReconciliationFindings(
   id: string,
-  params?: { records_only?: boolean; finding_status?: string; limit?: number; offset?: number }
+  params?: {
+    records_only?: boolean
+    finding_status?: string
+    limit?: number
+    offset?: number
+  }
 ) {
   return useQuery({
     queryKey: qk.reconciliations.findings(id, params),
@@ -72,7 +79,10 @@ export function useCreateComparison() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: ComparisonCreate) =>
-      comparisonsApi.createComparison(payload, typeof crypto !== "undefined" ? crypto.randomUUID() : undefined),
+      comparisonsApi.createComparison(
+        payload,
+        typeof crypto !== "undefined" ? crypto.randomUUID() : undefined
+      ),
     onSuccess: async () => {
       await invalidateForMutation(queryClient, "create_comparison")
       toast.success("Comparison started")
@@ -87,7 +97,10 @@ export function useCreateReconciliation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: ReconciliationCreate) =>
-      comparisonsApi.createReconciliation(payload, typeof crypto !== "undefined" ? crypto.randomUUID() : undefined),
+      comparisonsApi.createReconciliation(
+        payload,
+        typeof crypto !== "undefined" ? crypto.randomUUID() : undefined
+      ),
     onSuccess: async () => {
       await invalidateForMutation(queryClient, "create_reconciliation")
       toast.success("Reconciliation started")

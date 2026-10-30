@@ -26,7 +26,9 @@ export const jobsApi = {
   },
 
   async retry(id: string): Promise<{ job_id: string; status_url: string }> {
-    const res = await apiClient.post<{ job_id: string; status_url: string }>(`/jobs/${id}/retry`)
+    const res = await apiClient.post<{ job_id: string; status_url: string }>(
+      `/jobs/${id}/retry`
+    )
     return res.data
   },
 
@@ -34,4 +36,3 @@ export const jobsApi = {
     await apiClient.post(`/jobs/${id}/cancel`)
   },
 }
-

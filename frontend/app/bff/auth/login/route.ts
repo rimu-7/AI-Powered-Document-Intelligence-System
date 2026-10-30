@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { env } from "@/lib/env"
-import { COOKIE_ACCESS_EXPIRY, COOKIE_ACCESS_TOKEN, COOKIE_REFRESH_TOKEN } from "@/lib/auth/cookies"
+import {
+  COOKIE_ACCESS_EXPIRY,
+  COOKIE_ACCESS_TOKEN,
+  COOKIE_REFRESH_TOKEN,
+} from "@/lib/auth/cookies"
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,4 +63,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

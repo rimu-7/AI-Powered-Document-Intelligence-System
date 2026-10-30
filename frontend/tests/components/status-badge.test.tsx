@@ -35,4 +35,3 @@ describe("StatusBadge component", () => {
     expect(screen.getByText("Requires Review")).toBeInTheDocument()
   })
 })
-

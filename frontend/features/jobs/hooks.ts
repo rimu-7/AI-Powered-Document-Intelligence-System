@@ -57,9 +57,15 @@ export function useJob(id: string) {
     if (terminal && !prevTerminalRef.current) {
       prevTerminalRef.current = true
       if (job.document_id) {
-        queryClient.invalidateQueries({ queryKey: qk.documents.detail(job.document_id) })
-        queryClient.invalidateQueries({ queryKey: qk.documents.invoices(job.document_id) })
-        queryClient.invalidateQueries({ queryKey: qk.documents.validations(job.document_id) })
+        queryClient.invalidateQueries({
+          queryKey: qk.documents.detail(job.document_id),
+        })
+        queryClient.invalidateQueries({
+          queryKey: qk.documents.invoices(job.document_id),
+        })
+        queryClient.invalidateQueries({
+          queryKey: qk.documents.validations(job.document_id),
+        })
         queryClient.invalidateQueries({ queryKey: qk.reviews.queue() })
       }
       queryClient.invalidateQueries({ queryKey: qk.admin.stats() })

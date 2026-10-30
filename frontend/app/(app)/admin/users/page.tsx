@@ -46,12 +46,15 @@ export default function UsersAdminPage() {
   const { data: currentUser } = useCurrentUser()
   const isAdmin = canAdmin(currentUser?.role)
 
-  const { data, isLoading, isError, error, refetch } = useUsersList({ limit: 50 })
+  const { data, isLoading, isError, error, refetch } = useUsersList({
+    limit: 50,
+  })
   const users = data?.items ?? []
 
   const { mutate: createUser, isPending: isCreating } = useCreateUser()
   const { mutate: updateUser } = useUpdateUser()
-  const { mutate: revokeSessions, isPending: isRevoking } = useRevokeUserSessions()
+  const { mutate: revokeSessions, isPending: isRevoking } =
+    useRevokeUserSessions()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [newUser, setNewUser] = useState({
@@ -122,9 +125,9 @@ export default function UsersAdminPage() {
       </PageHeader>
 
       {isLoading ? (
-        <div className="space-y-2 border rounded-lg p-4">
+        <div className="space-y-2 rounded-lg border p-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+            <div key={i} className="h-10 animate-pulse rounded bg-muted" />
           ))}
         </div>
       ) : isError ? (
@@ -134,33 +137,49 @@ export default function UsersAdminPage() {
           onRetry={() => refetch()}
         />
       ) : (
-        <div className="border rounded-lg overflow-hidden bg-card">
-          <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id} className="text-xs">
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-foreground">{u.full_name || "—"}</span>
-                      <span className="text-muted-foreground font-mono text-[11px]">{u.email}</span>
+        <div className="space-y-4">
+          {/* Mobile / Tablet Container Cards */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden">
+            {users.map((u) => (
+              <div
+                key={u.id}
+                className="flex flex-col justify-between space-y-3 rounded-lg border bg-card p-4 transition-colors hover:border-primary/40"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm font-semibold text-foreground">
+                        {u.full_name || "—"}
+                      </span>
+                      <span className="truncate font-mono text-[11px] text-muted-foreground">
+                        {u.email}
+                      </span>
                     </div>
-                  </TableCell>
-                  <TableCell>
+                    <span
+                      onClick={() =>
+                        u.id !== currentUser?.id &&
+                        handleToggleActive(u.id, u.is_active)
+                      }
+                      className={`inline-flex shrink-0 cursor-pointer items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide ${
+                        u.is_active
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                          : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                      }`}
+                    >
+                      {u.is_active ? "Active" : "Deactivated"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs text-muted-foreground">
+                      Assigned Role:
+                    </span>
                     <Select
                       value={u.role}
                       onValueChange={(val) => handleRoleChange(u.id, val)}
                       disabled={u.id === currentUser?.id}
                     >
-                      <SelectTrigger className="w-[120px] h-7 text-xs font-mono uppercase">
+                      <SelectTrigger className="h-7 w-[120px] font-mono text-xs uppercase">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -170,36 +189,99 @@ export default function UsersAdminPage() {
                         <SelectItem value="ADMIN">ADMIN</SelectItem>
                       </SelectContent>
                     </Select>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      onClick={() => u.id !== currentUser?.id && handleToggleActive(u.id, u.is_active)}
-                      className={`cursor-pointer inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${
-                        u.is_active
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                          : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                      }`}
-                    >
-                      {u.is_active ? "Active" : "Deactivated"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <DateTime value={u.created_at} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setRevokeTargetId(u.id)}
-                      className="h-7 text-xs text-rose-600 hover:text-rose-700 gap-1"
-                    >
-                      <KeyRound className="h-3 w-3" /> Revoke Sessions
-                    </Button>
-                  </TableCell>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-2 text-[11px] text-muted-foreground">
+                  <DateTime value={u.created_at} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRevokeTargetId(u.id)}
+                    className="h-7 gap-1 px-2 text-xs text-rose-600 hover:text-rose-700"
+                  >
+                    <KeyRound className="h-3 w-3" /> Revoke Sessions
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden overflow-hidden rounded-lg border bg-card lg:block">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((u) => (
+                  <TableRow key={u.id} className="text-xs">
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">
+                          {u.full_name || "—"}
+                        </span>
+                        <span className="font-mono text-[11px] text-muted-foreground">
+                          {u.email}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={u.role}
+                        onValueChange={(val) => handleRoleChange(u.id, val)}
+                        disabled={u.id === currentUser?.id}
+                      >
+                        <SelectTrigger className="h-7 w-[120px] font-mono text-xs uppercase">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="VIEWER">VIEWER</SelectItem>
+                          <SelectItem value="ANALYST">ANALYST</SelectItem>
+                          <SelectItem value="REVIEWER">REVIEWER</SelectItem>
+                          <SelectItem value="ADMIN">ADMIN</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        onClick={() =>
+                          u.id !== currentUser?.id &&
+                          handleToggleActive(u.id, u.is_active)
+                        }
+                        className={`inline-flex cursor-pointer items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide ${
+                          u.is_active
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                            : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                        }`}
+                      >
+                        {u.is_active ? "Active" : "Deactivated"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <DateTime value={u.created_at} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRevokeTargetId(u.id)}
+                        className="h-7 gap-1 text-xs text-rose-600 hover:text-rose-700"
+                      >
+                        <KeyRound className="h-3 w-3" /> Revoke Sessions
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
@@ -219,7 +301,9 @@ export default function UsersAdminPage() {
               <Input
                 placeholder="Jane Analyst"
                 value={newUser.full_name}
-                onChange={(e) => setNewUser((p) => ({ ...p, full_name: e.target.value }))}
+                onChange={(e) =>
+                  setNewUser((p) => ({ ...p, full_name: e.target.value }))
+                }
                 className="h-8 text-xs"
               />
             </div>
@@ -230,19 +314,25 @@ export default function UsersAdminPage() {
                 type="email"
                 placeholder="jane@company.com"
                 value={newUser.email}
-                onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))}
+                onChange={(e) =>
+                  setNewUser((p) => ({ ...p, email: e.target.value }))
+                }
                 className="h-8 text-xs"
               />
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Initial Password (min 12 characters)</Label>
+              <Label className="text-xs">
+                Initial Password (min 12 characters)
+              </Label>
               <Input
                 type="password"
                 placeholder="••••••••••••"
                 value={newUser.password}
-                onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))}
-                className="h-8 text-xs font-mono"
+                onChange={(e) =>
+                  setNewUser((p) => ({ ...p, password: e.target.value }))
+                }
+                className="h-8 font-mono text-xs"
               />
             </div>
 
@@ -250,15 +340,21 @@ export default function UsersAdminPage() {
               <Label className="text-xs">Role</Label>
               <Select
                 value={newUser.role}
-                onValueChange={(val: any) => setNewUser((p) => ({ ...p, role: val }))}
+                onValueChange={(val: any) =>
+                  setNewUser((p) => ({ ...p, role: val }))
+                }
               >
-                <SelectTrigger className="h-8 text-xs font-mono">
+                <SelectTrigger className="h-8 font-mono text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="VIEWER">VIEWER - Read only</SelectItem>
-                  <SelectItem value="ANALYST">ANALYST - Upload & Compare</SelectItem>
-                  <SelectItem value="REVIEWER">REVIEWER - Approve & Correct</SelectItem>
+                  <SelectItem value="ANALYST">
+                    ANALYST - Upload & Compare
+                  </SelectItem>
+                  <SelectItem value="REVIEWER">
+                    REVIEWER - Approve & Correct
+                  </SelectItem>
                   <SelectItem value="ADMIN">ADMIN - Full privileges</SelectItem>
                 </SelectContent>
               </Select>
@@ -266,13 +362,19 @@ export default function UsersAdminPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setCreateOpen(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCreateOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               size="sm"
               onClick={handleCreate}
-              disabled={isCreating || !newUser.email || newUser.password.length < 12}
+              disabled={
+                isCreating || !newUser.email || newUser.password.length < 12
+              }
             >
               {isCreating ? "Creating..." : "Create User"}
             </Button>

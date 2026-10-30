@@ -9,9 +9,13 @@ interface BytesProps {
 
 export function Bytes({ bytes, className }: BytesProps) {
   return (
-    <span className={cn("font-mono text-xs tabular-nums text-muted-foreground", className)}>
+    <span
+      className={cn(
+        "font-mono text-xs text-muted-foreground tabular-nums",
+        className
+      )}
+    >
       {formatBytes(bytes)}
     </span>
   )
 }
-

@@ -50,9 +50,18 @@ function DocumentsContent() {
   const { mutate: deleteDoc, isPending: isDeleting } = useDeleteDocument()
 
   // URL state with nuqs (§2 & §3.3)
-  const [filename, setFilename] = useQueryState("filename", parseAsString.withDefault(""))
-  const [status, setStatus] = useQueryState("status", parseAsString.withDefault("all"))
-  const [fileKind, setFileKind] = useQueryState("kind", parseAsString.withDefault("all"))
+  const [filename, setFilename] = useQueryState(
+    "filename",
+    parseAsString.withDefault("")
+  )
+  const [status, setStatus] = useQueryState(
+    "status",
+    parseAsString.withDefault("all")
+  )
+  const [fileKind, setFileKind] = useQueryState(
+    "kind",
+    parseAsString.withDefault("all")
+  )
   const [docType] = useQueryState("type", parseAsString.withDefault("all"))
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1))
 
@@ -70,7 +79,8 @@ function DocumentsContent() {
     document_type: docType !== "all" ? docType : undefined,
   }
 
-  const { data, isLoading, isError, error, refetch } = useDocumentsList(queryParams)
+  const { data, isLoading, isError, error, refetch } =
+    useDocumentsList(queryParams)
 
   const documents = data?.items ?? []
   const total = data?.total ?? 0
@@ -107,10 +117,10 @@ function DocumentsContent() {
       </PageHeader>
 
       {/* Filter Toolbar */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        <div className="flex flex-1 items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center">
+        <div className="flex flex-1 flex-wrap items-center gap-2.5 sm:flex-nowrap">
+          <div className="relative min-w-[180px] flex-1">
+            <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search filename..."
               value={filename}
@@ -118,63 +128,66 @@ function DocumentsContent() {
                 setFilename(e.target.value)
                 setPage(1)
               }}
-              className="pl-9 h-9 text-xs"
+              className="h-9 pl-9 text-xs"
             />
           </div>
 
-          <Select
-            value={status}
-            onValueChange={(val) => {
-              setStatus(val)
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-[140px] h-9 text-xs">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="RECEIVED">Received</SelectItem>
-              <SelectItem value="PARSING">Parsing</SelectItem>
-              <SelectItem value="PARSED">Parsed</SelectItem>
-              <SelectItem value="EXTRACTING">Extracting</SelectItem>
-              <SelectItem value="EXTRACTED">Extracted</SelectItem>
-              <SelectItem value="VALIDATING">Validating</SelectItem>
-              <SelectItem value="VALIDATED">Validated</SelectItem>
-              <SelectItem value="PROCESSED">Processed</SelectItem>
-              <SelectItem value="FAILED">Failed</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <Select
+              value={status}
+              onValueChange={(val) => {
+                setStatus(val)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="h-9 flex-1 text-xs sm:w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="RECEIVED">Received</SelectItem>
+                <SelectItem value="PARSING">Parsing</SelectItem>
+                <SelectItem value="PARSED">Parsed</SelectItem>
+                <SelectItem value="EXTRACTING">Extracting</SelectItem>
+                <SelectItem value="EXTRACTED">Extracted</SelectItem>
+                <SelectItem value="VALIDATING">Validating</SelectItem>
+                <SelectItem value="VALIDATED">Validated</SelectItem>
+                <SelectItem value="PROCESSED">Processed</SelectItem>
+                <SelectItem value="FAILED">Failed</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select
-            value={fileKind}
-            onValueChange={(val) => {
-              setFileKind(val)
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-[130px] h-9 text-xs">
-              <SelectValue placeholder="File Kind" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Kinds</SelectItem>
-              <SelectItem value="PDF">PDF</SelectItem>
-              <SelectItem value="IMAGE">Image</SelectItem>
-              <SelectItem value="SPREADSHEET">Spreadsheet</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select
+              value={fileKind}
+              onValueChange={(val) => {
+                setFileKind(val)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="h-9 flex-1 text-xs sm:w-[130px]">
+                <SelectValue placeholder="File Kind" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Kinds</SelectItem>
+                <SelectItem value="PDF">PDF</SelectItem>
+                <SelectItem value="IMAGE">Image</SelectItem>
+                <SelectItem value="SPREADSHEET">Spreadsheet</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="text-xs text-muted-foreground flex items-center self-end md:self-center font-mono">
-          Showing {total === 0 ? 0 : offset + 1}–{Math.min(offset + limit, total)} of {total}
+        <div className="flex items-center self-start font-mono text-xs text-muted-foreground md:self-center">
+          Showing {total === 0 ? 0 : offset + 1}–
+          {Math.min(offset + limit, total)} of {total}
         </div>
       </div>
 
       {/* Main Table */}
       {isLoading ? (
-        <div className="space-y-2 border rounded-lg p-4">
+        <div className="space-y-2 rounded-lg border p-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+            <div key={i} className="h-10 animate-pulse rounded bg-muted" />
           ))}
         </div>
       ) : isError ? (
@@ -192,83 +205,153 @@ function DocumentsContent() {
               : "Upload documents to begin extraction, validation, and review."
           }
           actionLabel={canUpload(user?.role) ? "Upload Document" : undefined}
-          onAction={canUpload(user?.role) ? () => setUploadOpen(true) : undefined}
+          onAction={
+            canUpload(user?.role) ? () => setUploadOpen(true) : undefined
+          }
         />
       ) : (
-        <div className="border rounded-lg overflow-hidden bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40">
-                <TableHead className="w-[300px]">Filename</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Validation</TableHead>
-                <TableHead>Uploaded</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {documents.map((doc) => (
-                <TableRow
-                  key={doc.id}
-                  className="hover:bg-muted/30 transition-colors"
-                  onMouseEnter={() => prefetchDocument(doc.id)}
-                  onFocus={() => prefetchDocument(doc.id)}
-                >
-                  <TableCell className="font-medium">
+        <div className="space-y-4">
+          {/* Mobile / Tablet Container Cards */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden">
+            {documents.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex flex-col justify-between space-y-3 rounded-lg border bg-card p-4 transition-colors hover:border-primary/40"
+                onMouseEnter={() => prefetchDocument(doc.id)}
+                onFocus={() => prefetchDocument(doc.id)}
+              >
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
                     <Link
                       href={`/documents/${doc.id}`}
-                      className="text-foreground hover:text-primary transition-colors flex items-center gap-1.5 truncate max-w-[280px]"
+                      className="line-clamp-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
                       title={doc.original_filename}
                     >
-                      <span className="truncate">{doc.original_filename}</span>
+                      {doc.original_filename}
                     </Link>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs uppercase text-muted-foreground">
-                    {doc.document_type}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs uppercase text-muted-foreground">
-                    {doc.file_kind}
-                  </TableCell>
-                  <TableCell>
-                    <Bytes bytes={doc.file_size_bytes} />
-                  </TableCell>
-                  <TableCell>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Link href={`/documents/${doc.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </Link>
+                      {canAdmin(user?.role) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteTargetId(doc.id)}
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <StatusBadge status={doc.status} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={doc.validation_outcome} />
-                  </TableCell>
-                  <TableCell>
-                    <DateTime value={doc.created_at} />
-                  </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Link href={`/documents/${doc.id}`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    {canAdmin(user?.role) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteTargetId(doc.id)}
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    {doc.validation_outcome && (
+                      <StatusBadge status={doc.validation_outcome} />
                     )}
-                  </TableCell>
+                    <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground uppercase">
+                      {doc.file_kind} · {doc.document_type}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-2 text-[11px] text-muted-foreground">
+                  <Bytes bytes={doc.file_size_bytes} />
+                  <DateTime value={doc.created_at} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden overflow-hidden rounded-lg border bg-card lg:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40">
+                  <TableHead className="w-[300px]">Filename</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Kind</TableHead>
+                  <TableHead>Size</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Validation</TableHead>
+                  <TableHead>Uploaded</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {documents.map((doc) => (
+                  <TableRow
+                    key={doc.id}
+                    className="transition-colors hover:bg-muted/30"
+                    onMouseEnter={() => prefetchDocument(doc.id)}
+                    onFocus={() => prefetchDocument(doc.id)}
+                  >
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/documents/${doc.id}`}
+                        className="flex max-w-[280px] items-center gap-1.5 truncate text-foreground transition-colors hover:text-primary"
+                        title={doc.original_filename}
+                      >
+                        <span className="truncate">
+                          {doc.original_filename}
+                        </span>
+                      </Link>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground uppercase">
+                      {doc.document_type}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground uppercase">
+                      {doc.file_kind}
+                    </TableCell>
+                    <TableCell>
+                      <Bytes bytes={doc.file_size_bytes} />
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={doc.status} />
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={doc.validation_outcome} />
+                    </TableCell>
+                    <TableCell>
+                      <DateTime value={doc.created_at} />
+                    </TableCell>
+                    <TableCell className="space-x-1 text-right">
+                      <Link href={`/documents/${doc.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      {canAdmin(user?.role) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteTargetId(doc.id)}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
           {/* Pagination bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20">
-            <div className="text-xs text-muted-foreground font-mono">
+          <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-3">
+            <div className="font-mono text-xs text-muted-foreground">
               Page {page} of {totalPages}
             </div>
             <div className="flex items-center gap-2">
@@ -312,7 +395,9 @@ function DocumentsContent() {
 
 export default function DocumentsPage() {
   return (
-    <Suspense fallback={<div className="h-96 rounded-lg bg-card animate-pulse" />}>
+    <Suspense
+      fallback={<div className="h-96 animate-pulse rounded-lg bg-card" />}
+    >
       <DocumentsContent />
     </Suspense>
   )

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { env } from "@/lib/env"
-import { COOKIE_ACCESS_EXPIRY, COOKIE_ACCESS_TOKEN, COOKIE_REFRESH_TOKEN } from "@/lib/auth/cookies"
+import {
+  COOKIE_ACCESS_EXPIRY,
+  COOKIE_ACCESS_TOKEN,
+  COOKIE_REFRESH_TOKEN,
+} from "@/lib/auth/cookies"
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(COOKIE_ACCESS_TOKEN)?.value
@@ -14,7 +18,8 @@ export async function POST(req: NextRequest) {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
-            "X-Request-ID": req.headers.get("x-request-id") || crypto.randomUUID(),
+            "X-Request-ID":
+              req.headers.get("x-request-id") || crypto.randomUUID(),
           },
         }
       )
@@ -30,4 +35,3 @@ export async function POST(req: NextRequest) {
 
   return response
 }
-

@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { env } from "@/lib/env"
-import { COOKIE_ACCESS_EXPIRY, COOKIE_ACCESS_TOKEN, COOKIE_REFRESH_TOKEN } from "@/lib/auth/cookies"
+import {
+  COOKIE_ACCESS_EXPIRY,
+  COOKIE_ACCESS_TOKEN,
+  COOKIE_REFRESH_TOKEN,
+} from "@/lib/auth/cookies"
 
 export async function POST(req: NextRequest) {
   try {
     const refreshToken = req.cookies.get(COOKIE_REFRESH_TOKEN)?.value
     if (!refreshToken) {
       return NextResponse.json(
-        { error: { code: "NO_REFRESH_TOKEN", message: "No refresh token cookie found" } },
+        {
+          error: {
+            code: "NO_REFRESH_TOKEN",
+            message: "No refresh token cookie found",
+          },
+        },
         { status: 401 }
       )
     }
@@ -67,4 +76,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

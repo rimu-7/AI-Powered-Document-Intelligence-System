@@ -74,7 +74,8 @@ describe("Error Normalization", () => {
 
     const normalized = normalizeError(axiosError)
     expect(normalized.status).toBe(422)
-    expect(normalized.message).toBe("Value error, left and right documents must differ")
+    expect(normalized.message).toBe(
+      "Value error, left and right documents must differ"
+    )
   })
 })
-

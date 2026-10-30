@@ -1,9 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  adminApi,
-  CreateUserRequest,
-  UpdateUserRequest,
-} from "./api"
+import { adminApi, CreateUserRequest, UpdateUserRequest } from "./api"
 import { qk } from "@/lib/api/keys"
 import { invalidateForMutation } from "@/lib/api/invalidation"
 import { toast } from "sonner"
@@ -67,8 +63,13 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ userId, payload }: { userId: string; payload: UpdateUserRequest }) =>
-      adminApi.updateUser(userId, payload),
+    mutationFn: ({
+      userId,
+      payload,
+    }: {
+      userId: string
+      payload: UpdateUserRequest
+    }) => adminApi.updateUser(userId, payload),
     onSuccess: async () => {
       await invalidateForMutation(queryClient, "update_user")
       toast.success("User updated")

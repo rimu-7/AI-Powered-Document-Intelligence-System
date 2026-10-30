@@ -16,8 +16,8 @@ export function useSearch(
       mode === "keyword"
         ? qk.search.keyword({ query, filters, limit, offset })
         : mode === "semantic"
-        ? qk.search.semantic({ query, filters, limit, offset })
-        : qk.search.hybrid({ query, filters, limit, offset }),
+          ? qk.search.semantic({ query, filters, limit, offset })
+          : qk.search.hybrid({ query, filters, limit, offset }),
     queryFn: () => {
       if (mode === "keyword") {
         return searchApi.keyword(query, filters, limit, offset)
@@ -42,4 +42,3 @@ export function useSearch(
     placeholderData: (prev) => prev,
   })
 }
-

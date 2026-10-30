@@ -308,7 +308,11 @@ export interface paths {
         };
         /**
          * Get Page Image
-         * @description Render a single document page as PNG with caching and ETag.
+         * @description One page as a WebP image for the viewer (PDF, PNG/JPG and TIFF).
+         *
+         *     ``width`` is rounded up to 240, 640, 1024 or 1600 px. Evidence bounding
+         *     boxes are in page coordinates: scale them by ``image width / page width``
+         *     (``page_width`` in ``GET /documents/{id}/pages``).
          */
         get: operations["get_page_image_api_v1_documents__document_id__pages__page_number__image_get"];
         put?: never;
@@ -1111,11 +1115,8 @@ export interface components {
              * @default true
              */
             fuzzy_invoice_numbers: boolean;
-            /**
-             * Default Currency
-             * @description Explicit policy: currency assumed for records that state none
-             */
-            default_currency?: string | null;
+            /** @description Explicit policy: currency assumed for records that state none */
+            default_currency?: components["schemas"]["CurrencyCode"] | null;
         };
         /** ComparisonOut */
         ComparisonOut: {
@@ -1201,6 +1202,20 @@ export interface components {
             /** Full Name */
             full_name: string;
             role: components["schemas"]["Role"];
+        };
+        /**
+         * CurrencyCode
+         * @description ISO 4217 codes the system accepts. Adding one needs its minor units in
+         *     ``app.shared.money.CURRENCY_MINOR_UNITS`` and a migration that widens the
+         *     ``invoice_records.currency`` CHECK constraint.
+         * @enum {string}
+         */
+        CurrencyCode: "USD" | "EUR" | "GBP" | "JPY" | "CNY" | "CHF" | "CAD" | "AUD" | "NZD" | "SEK" | "NOK" | "DKK" | "PLN" | "CZK" | "HUF" | "INR" | "BDT" | "PKR" | "LKR" | "SGD" | "HKD" | "KRW" | "TWD" | "THB" | "MYR" | "IDR" | "PHP" | "VND" | "AED" | "SAR" | "QAR" | "BHD" | "KWD" | "OMR" | "JOD" | "TND" | "ILS" | "TRY" | "ZAR" | "NGN" | "KES" | "EGP" | "MAD" | "BRL" | "MXN" | "ARS" | "CLP" | "COP" | "PEN" | "RUB" | "UAH" | "RON" | "BGN" | "ISK" | "CLF";
+        /** CurrencyOption */
+        CurrencyOption: {
+            code: components["schemas"]["CurrencyCode"];
+            /** Minor Units */
+            minor_units: number;
         };
         /** DeadLetter */
         DeadLetter: {
@@ -1487,8 +1502,7 @@ export interface components {
             purchase_order_number: string | null;
             /** Payment Reference */
             payment_reference: string | null;
-            /** Currency */
-            currency: string | null;
+            currency: components["schemas"]["CurrencyCode"] | null;
             /** Currency Raw */
             currency_raw: string | null;
             /** Subtotal */
@@ -1591,8 +1605,7 @@ export interface components {
             purchase_order_number: string | null;
             /** Payment Reference */
             payment_reference: string | null;
-            /** Currency */
-            currency: string | null;
+            currency: components["schemas"]["CurrencyCode"] | null;
             /** Currency Raw */
             currency_raw: string | null;
             /** Subtotal */
@@ -2045,6 +2058,8 @@ export interface components {
             allowed_extensions: string[];
             /** Direct Upload Available */
             direct_upload_available: boolean;
+            /** Currencies */
+            currencies: components["schemas"]["CurrencyOption"][];
         };
         /** ReconciliationCreate */
         ReconciliationCreate: {
@@ -2294,8 +2309,7 @@ export interface components {
             date_to?: string | null;
             /** Supplier */
             supplier?: string | null;
-            /** Currency */
-            currency?: string | null;
+            currency?: components["schemas"]["CurrencyCode"] | null;
             /** Amount Min */
             amount_min?: number | string | null;
             /** Amount Max */
@@ -3237,8 +3251,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "image/webp": unknown;
                 };
+            };
+            /** @description Not modified */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -4347,7 +4368,7 @@ export interface operations {
                 limit?: number;
                 offset?: number;
                 supplier?: string | null;
-                currency?: string | null;
+                currency?: components["schemas"]["CurrencyCode"] | null;
                 date_from?: string | null;
                 date_to?: string | null;
                 amount_min?: string | null;

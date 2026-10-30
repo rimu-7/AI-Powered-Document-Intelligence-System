@@ -15,7 +15,9 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (!config.headers["X-Request-ID"]) {
     config.headers["X-Request-ID"] =
-      typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `req-${Date.now()}`
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `req-${Date.now()}`
   }
 
   // Disable timeout for file uploads
@@ -30,14 +32,24 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retried?: boolean }
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retried?: boolean
+    }
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retried) {
-      const errData = error.response.data as { error?: { code?: string } } | undefined
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retried
+    ) {
+      const errData = error.response.data as
+        { error?: { code?: string } } | undefined
       const code = errData?.error?.code
 
       // Only TOKEN_EXPIRED triggers refresh; terminal auth errors send straight to /login
-      if (code === "TOKEN_EXPIRED" || (!code && !originalRequest.url?.includes("/auth/"))) {
+      if (
+        code === "TOKEN_EXPIRED" ||
+        (!code && !originalRequest.url?.includes("/auth/"))
+      ) {
         originalRequest._retried = true
 
         try {
@@ -59,7 +71,10 @@ apiClient.interceptors.response.use(
       }
 
       // Hard redirect to login if auth is invalid or refresh fails
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login")
+      ) {
         authChannel?.postMessage({ type: "LOGOUT" })
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`
@@ -89,21 +104,32 @@ export function initProactiveRefresh() {
       // Already close to expiry, trigger refresh if visible
       if (document.visibilityState === "visible") {
         requestTokenRefresh(async () => {
-          const res = await axios.post("/bff/auth/refresh", {}, { headers: { "X-Requested-With": "docintel" } })
+          const res = await axios.post(
+            "/bff/auth/refresh",
+            {},
+            { headers: { "X-Requested-With": "docintel" } }
+          )
           scheduleNext()
           return { ok: res.data?.ok }
         }).catch(() => {})
       }
     } else {
-      proactiveTimer = setTimeout(() => {
-        if (document.visibilityState === "visible") {
-          requestTokenRefresh(async () => {
-            const res = await axios.post("/bff/auth/refresh", {}, { headers: { "X-Requested-With": "docintel" } })
-            scheduleNext()
-            return { ok: res.data?.ok }
-          }).catch(() => {})
-        }
-      }, Math.min(msUntilRefresh, 2147483647))
+      proactiveTimer = setTimeout(
+        () => {
+          if (document.visibilityState === "visible") {
+            requestTokenRefresh(async () => {
+              const res = await axios.post(
+                "/bff/auth/refresh",
+                {},
+                { headers: { "X-Requested-With": "docintel" } }
+              )
+              scheduleNext()
+              return { ok: res.data?.ok }
+            }).catch(() => {})
+          }
+        },
+        Math.min(msUntilRefresh, 2147483647)
+      )
     }
   }
 

@@ -10,8 +10,13 @@ export type FindingOut = components["schemas"]["FindingOut"]
 export type Page_FindingOut_ = components["schemas"]["Page_FindingOut_"]
 
 export const comparisonsApi = {
-  async list(params?: { limit?: number; offset?: number }): Promise<Page_ComparisonOut_> {
-    const res = await apiClient.get<Page_ComparisonOut_>("/comparisons", { params })
+  async list(params?: {
+    limit?: number
+    offset?: number
+  }): Promise<Page_ComparisonOut_> {
+    const res = await apiClient.get<Page_ComparisonOut_>("/comparisons", {
+      params,
+    })
     return res.data
   },
 
@@ -20,15 +25,28 @@ export const comparisonsApi = {
     return res.data
   },
 
-  async comparisonFindings(id: string, params?: { limit?: number; offset?: number; status?: string }): Promise<Page_FindingOut_> {
-    const res = await apiClient.get<Page_FindingOut_>(`/comparisons/${id}/findings`, { params })
+  async comparisonFindings(
+    id: string,
+    params?: { limit?: number; offset?: number; status?: string }
+  ): Promise<Page_FindingOut_> {
+    const res = await apiClient.get<Page_FindingOut_>(
+      `/comparisons/${id}/findings`,
+      { params }
+    )
     return res.data
   },
 
-  async createComparison(payload: ComparisonCreate, idempotencyKey?: string): Promise<ComparisonAccepted> {
-    const res = await apiClient.post<ComparisonAccepted>("/comparisons", payload, {
-      headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {},
-    })
+  async createComparison(
+    payload: ComparisonCreate,
+    idempotencyKey?: string
+  ): Promise<ComparisonAccepted> {
+    const res = await apiClient.post<ComparisonAccepted>(
+      "/comparisons",
+      payload,
+      {
+        headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {},
+      }
+    )
     return res.data
   },
 
@@ -39,16 +57,31 @@ export const comparisonsApi = {
 
   async reconciliationFindings(
     id: string,
-    params?: { records_only?: boolean; finding_status?: string; limit?: number; offset?: number }
+    params?: {
+      records_only?: boolean
+      finding_status?: string
+      limit?: number
+      offset?: number
+    }
   ): Promise<Page_FindingOut_> {
-    const res = await apiClient.get<Page_FindingOut_>(`/reconciliations/${id}/findings`, { params })
+    const res = await apiClient.get<Page_FindingOut_>(
+      `/reconciliations/${id}/findings`,
+      { params }
+    )
     return res.data
   },
 
-  async createReconciliation(payload: ReconciliationCreate, idempotencyKey?: string): Promise<ComparisonAccepted> {
-    const res = await apiClient.post<ComparisonAccepted>("/reconciliations", payload, {
-      headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {},
-    })
+  async createReconciliation(
+    payload: ReconciliationCreate,
+    idempotencyKey?: string
+  ): Promise<ComparisonAccepted> {
+    const res = await apiClient.post<ComparisonAccepted>(
+      "/reconciliations",
+      payload,
+      {
+        headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {},
+      }
+    )
     return res.data
   },
 
@@ -56,4 +89,3 @@ export const comparisonsApi = {
     return `/bff/api/v1/reconciliations/${reconciliationId}/export.csv`
   },
 }
-

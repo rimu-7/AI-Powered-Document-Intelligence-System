@@ -22,8 +22,13 @@ export const adminApi = {
     return res.data
   },
 
-  async getDeadLetter(params?: { limit?: number; offset?: number }): Promise<Page_DeadLetter_> {
-    const res = await apiClient.get<Page_DeadLetter_>("/admin/dead-letter", { params })
+  async getDeadLetter(params?: {
+    limit?: number
+    offset?: number
+  }): Promise<Page_DeadLetter_> {
+    const res = await apiClient.get<Page_DeadLetter_>("/admin/dead-letter", {
+      params,
+    })
     return res.data
   },
 
@@ -34,11 +39,17 @@ export const adminApi = {
     limit?: number
     offset?: number
   }): Promise<Page_AuditEventOut_> {
-    const res = await apiClient.get<Page_AuditEventOut_>("/admin/audit-events", { params })
+    const res = await apiClient.get<Page_AuditEventOut_>(
+      "/admin/audit-events",
+      { params }
+    )
     return res.data
   },
 
-  async listUsers(params?: { limit?: number; offset?: number }): Promise<Page_UserOut_> {
+  async listUsers(params?: {
+    limit?: number
+    offset?: number
+  }): Promise<Page_UserOut_> {
     const res = await apiClient.get<Page_UserOut_>("/users", { params })
     return res.data
   },
@@ -48,7 +59,10 @@ export const adminApi = {
     return res.data
   },
 
-  async updateUser(userId: string, payload: UpdateUserRequest): Promise<UserOut> {
+  async updateUser(
+    userId: string,
+    payload: UpdateUserRequest
+  ): Promise<UserOut> {
     const res = await apiClient.patch<UserOut>(`/users/${userId}`, payload)
     return res.data
   },
@@ -58,7 +72,9 @@ export const adminApi = {
   },
 
   async getHealthReady(): Promise<SystemHealth> {
-    const res = await apiClient.get<SystemHealth>("/health/ready")
+    const res = await apiClient.get<SystemHealth>("/health/ready", {
+      baseURL: "/bff/api",
+    })
     return res.data
   },
 }

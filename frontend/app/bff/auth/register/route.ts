@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { env } from "@/lib/env"
-import { COOKIE_ACCESS_EXPIRY, COOKIE_ACCESS_TOKEN, COOKIE_REFRESH_TOKEN } from "@/lib/auth/cookies"
+import {
+  COOKIE_ACCESS_EXPIRY,
+  COOKIE_ACCESS_TOKEN,
+  COOKIE_REFRESH_TOKEN,
+} from "@/lib/auth/cookies"
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +28,11 @@ export async function POST(req: NextRequest) {
       const { access_token, refresh_token, expires_in = 900 } = data
       const expiresAt = Date.now() + expires_in * 1000
 
-      const response = NextResponse.json({ ok: true, user: data.user, expires_at: expiresAt })
+      const response = NextResponse.json({
+        ok: true,
+        user: data.user,
+        expires_at: expiresAt,
+      })
       response.cookies.set(COOKIE_ACCESS_TOKEN, access_token, {
         httpOnly: true,
         secure: env.COOKIE_SECURE,
@@ -57,4 +65,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

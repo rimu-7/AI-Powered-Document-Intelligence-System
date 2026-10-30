@@ -9,14 +9,28 @@ describe("Format Utilities", () => {
     })
 
     it("handles null or empty values gracefully", () => {
-      expect(formatMoney(null)).toBe("—")
-      expect(formatMoney("")).toBe("—")
-      expect(formatMoney(undefined)).toBe("—")
+      expect(formatMoney(null, null)).toBe("—")
+      expect(formatMoney("", null)).toBe("—")
+      expect(formatMoney(undefined, null)).toBe("—")
     })
 
-    it("formats high precision without rounding if provided", () => {
-      const res = formatMoney("1234.5678", "EUR")
-      expect(res).toContain("1,234.5678")
+    it("formats with null currency as decimal and never produces EUR", () => {
+      const res = formatMoney("15724.91", null)
+      expect(res).toBe("15,724.91")
+      expect(res).not.toContain("€")
+      expect(res).not.toContain("EUR")
+
+      const resWithSymbol = formatMoney("15724.91", null, "$")
+      expect(resWithSymbol).toBe("$15,724.91")
+      expect(resWithSymbol).not.toContain("€")
+    })
+
+    it("respects minor units from config or default currency mapping", () => {
+      const jpy = formatMoney("1234", "JPY")
+      expect(jpy).not.toContain(".00")
+
+      const bhd = formatMoney("12.345", "BHD", undefined, 3)
+      expect(bhd).toContain("12.345")
     })
   })
 
@@ -44,4 +58,3 @@ describe("Format Utilities", () => {
     })
   })
 })
-

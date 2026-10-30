@@ -36,7 +36,10 @@ export function useInvoiceHistory(id: string) {
   })
 }
 
-export function useInvoiceValidations(id: string, params?: { severity?: string }) {
+export function useInvoiceValidations(
+  id: string,
+  params?: { severity?: string }
+) {
   return useQuery({
     queryKey: qk.invoices.validations(id, params),
     queryFn: () => invoicesApi.validations(id, params),
@@ -59,7 +62,9 @@ export function useCorrectInvoice() {
     },
     onError: (err: any) => {
       if (err.status === 409 && err.code === "VERSION_CONFLICT") {
-        toast.error("Version conflict: The invoice was modified by another user.")
+        toast.error(
+          "Version conflict: The invoice was modified by another user."
+        )
       } else {
         toast.error(err.message || "Failed to save corrections")
       }
@@ -79,12 +84,13 @@ export function useApproveInvoice() {
       })
       toast.success("Invoice approved successfully")
     },
-    onError: (err: any) => {
-      if (err.status === 409 && err.code === "BLOCKING_ISSUES") {
-        // Will be handled in UI dialog
-      } else {
-        toast.error(err.message || "Failed to approve invoice")
+    onError: async (err: any, { id }) => {
+      // The approve dialog shows these inline; refresh what the server based them on.
+      if (err.status === 409) {
+        await queryClient.invalidateQueries({ queryKey: ["invoices", id] })
+        return
       }
+      toast.error(err.message || "Failed to approve invoice")
     },
   })
 }
@@ -112,7 +118,9 @@ export function useRevalidateInvoice() {
   return useMutation({
     mutationFn: (id: string) => invoicesApi.revalidate(id),
     onSuccess: async (_, id) => {
-      await invalidateForMutation(queryClient, "revalidate_invoice", { invoiceId: id })
+      await invalidateForMutation(queryClient, "revalidate_invoice", {
+        invoiceId: id,
+      })
       toast.success("Revalidation started")
     },
     onError: (err: any) => {
@@ -120,4 +128,3 @@ export function useRevalidateInvoice() {
     },
   })
 }
-

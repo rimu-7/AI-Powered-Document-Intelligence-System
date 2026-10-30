@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test"
 
+const STORAGE_STATE = "e2e/.auth/user.json"
+
+// Runs against a running system (`make up`), default http://localhost:3000.
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -13,10 +16,17 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   projects: [
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
     {
-      name: "chromium",
+      name: "public",
+      testMatch: /(auth|a11y)\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "signed-in",
+      testMatch: /workflow\.spec\.ts/,
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Chrome"], storageState: STORAGE_STATE },
     },
   ],
 })
-

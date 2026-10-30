@@ -13,7 +13,17 @@ export const mockUser = {
 export const mockPublicConfig = {
   max_upload_bytes: 104857600,
   max_upload_pages: 500,
-  allowed_extensions: [".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".xlsx", ".xls", ".csv"],
+  allowed_extensions: [
+    ".pdf",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".tiff",
+    ".tif",
+    ".xlsx",
+    ".xls",
+    ".csv",
+  ],
   registration_mode: "open",
   uploadthing_direct_enabled: false,
 }
@@ -160,6 +170,29 @@ export const handlers = [
     return HttpResponse.json([])
   }),
 
+  http.patch("*/bff/api/v1/invoices/:id/corrections", async ({ request }) => {
+    const body = (await request.json()) as any
+    if (body.expected_version && body.expected_version < mockInvoice.version) {
+      return HttpResponse.json(
+        {
+          error: {
+            code: "VERSION_CONFLICT",
+            message: "Invoice has been modified by another reviewer",
+            status: 409,
+          },
+        },
+        { status: 409 }
+      )
+    }
+    return HttpResponse.json({
+      invoice: {
+        ...mockInvoice,
+        version: mockInvoice.version + 1,
+      },
+      revalidation_job_id: "job-reval-1",
+    })
+  }),
+
   http.post("*/bff/api/v1/invoices/:id/correct", async ({ request }) => {
     const body = (await request.json()) as any
     if (body.expected_version && body.expected_version < mockInvoice.version) {
@@ -183,12 +216,20 @@ export const handlers = [
 
   http.post("*/bff/api/v1/invoices/:id/approve", async ({ request }) => {
     const body = (await request.json()) as any
-    if (mockValidationIssues.some((v) => (v.severity === "CRITICAL" || (v.severity as string) === "BLOCKING") && v.resolution_status === "OPEN")) {
+    if (
+      mockValidationIssues.some(
+        (v) =>
+          (v.severity === "CRITICAL" ||
+            (v.severity as string) === "BLOCKING") &&
+          v.resolution_status === "OPEN"
+      )
+    ) {
       return HttpResponse.json(
         {
           error: {
             code: "BLOCKING_ISSUES_EXIST",
-            message: "All blocking validation issues must be resolved or acknowledged before approval.",
+            message:
+              "All blocking validation issues must be resolved or acknowledged before approval.",
             status: 400,
           },
         },

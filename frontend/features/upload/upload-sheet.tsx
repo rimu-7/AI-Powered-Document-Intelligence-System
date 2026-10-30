@@ -26,7 +26,8 @@ import {
 import Link from "next/link"
 
 export function UploadSheet() {
-  const { items, isOpen, setIsOpen, addFiles, removeItem, clearFinished } = useUpload()
+  const { items, isOpen, setIsOpen, addFiles, removeItem, clearFinished } =
+    useUpload()
   const { data: config } = usePublicConfig()
 
   const maxFileBytes = config?.upload_max_file_bytes ?? 200 * 1024 * 1024
@@ -51,7 +52,9 @@ export function UploadSheet() {
       "image/png": [".png"],
       "image/jpeg": [".jpg", ".jpeg"],
       "image/tiff": [".tiff", ".tif"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+        ".xlsx",
+      ],
       "application/vnd.ms-excel": [".xls"],
       "text/csv": [".csv"],
     },
@@ -59,32 +62,35 @@ export function UploadSheet() {
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetContent className="w-full sm:max-w-lg flex flex-col h-full overflow-hidden p-6">
+      <SheetContent className="flex h-full w-full flex-col overflow-hidden p-6 sm:max-w-lg">
         <SheetHeader>
           <SheetTitle className="text-xl">Upload Documents</SheetTitle>
           <SheetDescription>
-            Drop invoices, receipts, scans, or spreadsheets (up to 20 files, max {formatBytes(maxFileBytes)}).
+            Drop invoices, receipts, scans, or spreadsheets (up to 20 files, max{" "}
+            {formatBytes(maxFileBytes)}).
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-4 flex-1 flex flex-col gap-4 overflow-hidden">
+        <div className="mt-4 flex flex-1 flex-col gap-4 overflow-hidden">
           {/* Dropzone */}
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
               isDragActive
                 ? "border-primary bg-primary/5"
                 : "border-border hover:border-primary/50 hover:bg-muted/30"
             }`}
           >
             <input {...getInputProps()} />
-            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-2 text-muted-foreground">
+            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <Upload className="h-5 w-5" />
             </div>
             <p className="text-sm font-medium">
-              {isDragActive ? "Drop files here..." : "Click to select or drag and drop"}
+              {isDragActive
+                ? "Drop files here..."
+                : "Click to select or drag and drop"}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="mt-1 text-xs text-muted-foreground">
               PDF, PNG, JPG, TIFF, XLSX, XLS, CSV
             </p>
           </div>
@@ -94,7 +100,12 @@ export function UploadSheet() {
             <span className="text-xs font-medium text-muted-foreground">
               {items.length} {items.length === 1 ? "file" : "files"} in batch
             </span>
-            {items.some((i) => i.status === "done" || i.status === "rejected" || i.status === "duplicate") && (
+            {items.some(
+              (i) =>
+                i.status === "done" ||
+                i.status === "rejected" ||
+                i.status === "duplicate"
+            ) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -106,9 +117,13 @@ export function UploadSheet() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+          <div className="flex-1 space-y-2.5 overflow-y-auto pr-1">
             {items.map((item) => (
-              <UploadItemRow key={item.id} item={item} onRemove={() => removeItem(item.id)} />
+              <UploadItemRow
+                key={item.id}
+                item={item}
+                onRemove={() => removeItem(item.id)}
+              />
             ))}
           </div>
         </div>
@@ -117,50 +132,61 @@ export function UploadSheet() {
   )
 }
 
-function UploadItemRow({ item, onRemove }: { item: UploadItem; onRemove: () => void }) {
-  const isFinished = item.status === "done" || item.status === "rejected" || item.status === "duplicate"
+function UploadItemRow({
+  item,
+  onRemove,
+}: {
+  item: UploadItem
+  onRemove: () => void
+}) {
+  const isFinished =
+    item.status === "done" ||
+    item.status === "rejected" ||
+    item.status === "duplicate"
 
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-lg border bg-card text-card-foreground text-xs">
+    <div className="flex flex-col gap-1.5 rounded-lg border bg-card p-3 text-xs text-card-foreground">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+        <div className="flex min-w-0 flex-1 items-center gap-2 truncate">
           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="font-medium truncate" title={item.file.name}>
+          <span className="truncate font-medium" title={item.file.name}>
             {item.file.name}
           </span>
-          <span className="text-muted-foreground text-[10px] shrink-0 font-mono">
+          <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
             {formatBytes(item.file.size)}
           </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           {item.status === "uploading" && (
-            <span className="text-blue-600 font-mono text-[11px] font-medium">{item.progress}%</span>
+            <span className="font-mono text-[11px] font-medium text-blue-600">
+              {item.progress}%
+            </span>
           )}
           {item.status === "verifying" && (
-            <span className="flex items-center gap-1 text-amber-600 text-[11px]">
+            <span className="flex items-center gap-1 text-[11px] text-amber-600">
               <Loader2 className="h-3 w-3 animate-spin" /> Verifying
             </span>
           )}
           {item.status === "done" && (
-            <span className="flex items-center gap-1 text-emerald-600 font-medium text-[11px]">
+            <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600">
               <CheckCircle2 className="h-3.5 w-3.5" /> Ready
             </span>
           )}
           {item.status === "duplicate" && (
-            <span className="flex items-center gap-1 text-amber-600 font-medium text-[11px]">
+            <span className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
               <Copy className="h-3.5 w-3.5" /> Duplicate
             </span>
           )}
           {item.status === "rejected" && (
-            <span className="flex items-center gap-1 text-rose-600 font-medium text-[11px]">
+            <span className="flex items-center gap-1 text-[11px] font-medium text-rose-600">
               <AlertCircle className="h-3.5 w-3.5" /> Rejected
             </span>
           )}
           {isFinished && (
             <button
               onClick={onRemove}
-              className="text-muted-foreground hover:text-foreground p-0.5 rounded transition-colors"
+              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -168,14 +194,16 @@ function UploadItemRow({ item, onRemove }: { item: UploadItem; onRemove: () => v
         </div>
       </div>
 
-      {item.status === "uploading" && <Progress value={item.progress} className="h-1.5" />}
+      {item.status === "uploading" && (
+        <Progress value={item.progress} className="h-1.5" />
+      )}
 
       {item.status === "duplicate" && item.duplicateOfId && (
-        <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 mt-0.5">
+        <div className="mt-0.5 flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
           <span>Already exists:</span>
           <Link
             href={`/documents/${item.duplicateOfId}`}
-            className="underline font-medium hover:text-amber-800"
+            className="font-medium underline hover:text-amber-800"
           >
             View Document
           </Link>
@@ -183,21 +211,23 @@ function UploadItemRow({ item, onRemove }: { item: UploadItem; onRemove: () => v
       )}
 
       {item.status === "rejected" && item.error && (
-        <p className="text-rose-600 dark:text-rose-400 text-[11px] mt-0.5">{item.error}</p>
+        <p className="mt-0.5 text-[11px] text-rose-600 dark:text-rose-400">
+          {item.error}
+        </p>
       )}
 
       {item.status === "done" && item.documentId && (
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="mt-0.5 flex items-center gap-2">
           <Link
             href={`/documents/${item.documentId}`}
-            className="text-primary underline font-medium hover:text-primary/80"
+            className="font-medium text-primary underline hover:text-primary/80"
           >
             Open Document →
           </Link>
           {item.jobId && (
             <Link
               href={`/jobs/${item.jobId}`}
-              className="text-muted-foreground hover:underline ml-2"
+              className="ml-2 text-muted-foreground hover:underline"
             >
               View Processing Job
             </Link>

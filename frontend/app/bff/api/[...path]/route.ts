@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { env } from "@/lib/env"
+import { isTrustedOrigin } from "@/lib/auth/origin"
 import { COOKIE_ACCESS_TOKEN } from "@/lib/auth/cookies"
 
 export const dynamic = "force-dynamic"
@@ -21,14 +22,22 @@ const STRIPPED_RESPONSE_HEADERS = [
   "keep-alive",
 ]
 
-async function handleProxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+async function handleProxy(
+  req: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
   const { path } = await params
   const joinedPath = path.join("/")
 
   // Enforce valid upstream destination
   if (!joinedPath.startsWith("v1/") && !joinedPath.startsWith("health")) {
     return NextResponse.json(
-      { error: { code: "FORBIDDEN_PROXY_PATH", message: "Disallowed upstream proxy route" } },
+      {
+        error: {
+          code: "FORBIDDEN_PROXY_PATH",
+          message: "Disallowed upstream proxy route",
+        },
+      },
       { status: 403 }
     )
   }
@@ -39,10 +48,11 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
     const origin = req.headers.get("origin")
     const requestedWith = req.headers.get("x-requested-with")
     if (requestedWith !== "docintel") {
-      const isAllowedOrigin = !origin || origin === env.APP_ORIGIN || origin.includes("localhost") || origin.includes("127.0.0.1")
-      if (!isAllowedOrigin) {
+      if (!isTrustedOrigin(origin)) {
         return NextResponse.json(
-          { error: { code: "CSRF_BLOCKED", message: "CSRF validation failed" } },
+          {
+            error: { code: "CSRF_BLOCKED", message: "CSRF validation failed" },
+          },
           { status: 403 }
         )
       }
@@ -50,7 +60,14 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
   }
 
   const token = req.cookies.get(COOKIE_ACCESS_TOKEN)?.value
-  const upstreamUrl = new URL(`/api/${joinedPath}${req.nextUrl.search}`, env.API_INTERNAL_URL)
+  // /bff/api/v1/* → /api/v1/*; /bff/api/health/* → /health/* (health lives outside /api)
+  const upstreamPath = joinedPath.startsWith("health")
+    ? `/${joinedPath}`
+    : `/api/${joinedPath}`
+  const upstreamUrl = new URL(
+    `${upstreamPath}${req.nextUrl.search}`,
+    env.API_INTERNAL_URL
+  )
 
   const headers = new Headers()
   if (token) {
@@ -113,4 +130,3 @@ export {
   handleProxy as DELETE,
   handleProxy as HEAD,
 }
-

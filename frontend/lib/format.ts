@@ -1,11 +1,29 @@
 import { format, parseISO } from "date-fns"
+import type { CurrencyCode } from "@/lib/api/types"
+
+export const CURRENCY_MINOR_UNITS: Partial<Record<CurrencyCode, number>> = {
+  JPY: 0,
+  KRW: 0,
+  VND: 0,
+  CLP: 0,
+  ISK: 0,
+  BHD: 3,
+  KWD: 3,
+  OMR: 3,
+  JOD: 3,
+  TND: 3,
+  CLF: 4,
+}
 
 /**
  * Format decimal string as currency using Intl.NumberFormat without converting to float arithmetic.
+ * When currency is null, format as decimal and prefix raw printed symbol if given.
  */
 export function formatMoney(
   value: string | number | null | undefined,
-  currency: string = "EUR",
+  currency: CurrencyCode | null,
+  raw?: string | null,
+  minorUnits?: number | null,
   locale: string = "en-US"
 ): string {
   if (value === null || value === undefined || value === "") {
@@ -18,12 +36,32 @@ export function formatMoney(
     return str
   }
 
+  const fractionDigits =
+    minorUnits !== undefined && minorUnits !== null
+      ? minorUnits
+      : currency
+        ? (CURRENCY_MINOR_UNITS[currency] ?? 2)
+        : 2
+
+  if (!currency) {
+    try {
+      const formatted = new Intl.NumberFormat(locale, {
+        style: "decimal",
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: Math.max(fractionDigits, 4),
+      }).format(num)
+      return raw ? `${raw}${formatted}` : formatted
+    } catch {
+      return raw ? `${raw}${str}` : str
+    }
+  }
+
   try {
     return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency: currency || "EUR",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
+      currency,
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: Math.max(fractionDigits, 4),
     }).format(num)
   } catch {
     return `${currency} ${str}`
@@ -47,10 +85,14 @@ export function formatBytes(bytes: number | null | undefined): string {
 /**
  * Format ISO date string into readable string
  */
-export function formatDate(isoString: string | null | undefined, pattern: string = "MMM d, yyyy HH:mm"): string {
+export function formatDate(
+  isoString: string | null | undefined,
+  pattern: string = "MMM d, yyyy HH:mm"
+): string {
   if (!isoString) return "—"
   try {
-    const d = typeof isoString === "string" ? parseISO(isoString) : new Date(isoString)
+    const d =
+      typeof isoString === "string" ? parseISO(isoString) : new Date(isoString)
     return format(d, pattern)
   } catch {
     return String(isoString)
@@ -76,4 +118,3 @@ export function formatTimeAgo(isoString: string | null | undefined): string {
     return formatDate(isoString)
   }
 }
-

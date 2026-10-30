@@ -44,4 +44,3 @@ export const authChannel =
   typeof window !== "undefined" && "BroadcastChannel" in window
     ? new BroadcastChannel("docintel-auth")
     : null
-

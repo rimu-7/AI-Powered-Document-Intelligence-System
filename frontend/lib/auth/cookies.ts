@@ -12,9 +12,10 @@ export interface CookieOptions {
 
 export function getCookieExpiryTimestamp(): number | null {
   if (typeof document === "undefined") return null
-  const match = document.cookie.match(new RegExp(`(^|;\\s*)${COOKIE_ACCESS_EXPIRY}=([^;]*)`))
+  const match = document.cookie.match(
+    new RegExp(`(^|;\\s*)${COOKIE_ACCESS_EXPIRY}=([^;]*)`)
+  )
   if (!match || !match[2]) return null
   const exp = parseInt(decodeURIComponent(match[2]), 10)
   return Number.isNaN(exp) ? null : exp
 }
-

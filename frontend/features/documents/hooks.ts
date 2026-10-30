@@ -20,9 +20,11 @@ export function useDocument(id: string) {
     queryFn: () => documentsApi.get(id),
     initialData: () => {
       // Seed detail from list cache if available (§3.3)
-      const listData = queryClient.getQueriesData<{ items?: { id: string }[] }>({
-        queryKey: qk.documents.all(),
-      })
+      const listData = queryClient.getQueriesData<{ items?: { id: string }[] }>(
+        {
+          queryKey: qk.documents.all(),
+        }
+      )
       for (const [, cache] of listData) {
         const found = cache?.items?.find((item) => item.id === id)
         if (found) return found as any
@@ -34,7 +36,10 @@ export function useDocument(id: string) {
   })
 }
 
-export function useDocumentPages(id: string, params?: { limit?: number; offset?: number }) {
+export function useDocumentPages(
+  id: string,
+  params?: { limit?: number; offset?: number }
+) {
   return useQuery({
     queryKey: qk.documents.pages(id, params),
     queryFn: () => documentsApi.pages(id, params),
@@ -50,7 +55,10 @@ export function useDocumentText(id: string, page_from = 1, page_to?: number) {
   })
 }
 
-export function useDocumentTables(id: string, params?: { limit?: number; offset?: number }) {
+export function useDocumentTables(
+  id: string,
+  params?: { limit?: number; offset?: number }
+) {
   return useQuery({
     queryKey: qk.documents.tables(id, params),
     queryFn: () => documentsApi.tables(id, params),
@@ -58,7 +66,11 @@ export function useDocumentTables(id: string, params?: { limit?: number; offset?
   })
 }
 
-export function useDocumentTableRows(docId: string, tableId: string, params?: { limit?: number; offset?: number }) {
+export function useDocumentTableRows(
+  docId: string,
+  tableId: string,
+  params?: { limit?: number; offset?: number }
+) {
   return useQuery({
     queryKey: qk.documents.tableRows(docId, tableId, params),
     queryFn: () => documentsApi.tableRows(docId, tableId, params),
@@ -83,7 +95,9 @@ export function useDocumentJobs(id: string) {
       // Poll if any job is still running
       const jobs = query.state.data
       if (!jobs || jobs.length === 0) return false
-      const hasRunning = jobs.some((j) => !["COMPLETED", "FAILED", "CANCELLED"].includes(j.state))
+      const hasRunning = jobs.some(
+        (j) => !["COMPLETED", "FAILED", "CANCELLED"].includes(j.state)
+      )
       return hasRunning ? 3000 : false
     },
   })
@@ -97,7 +111,10 @@ export function useDocumentInvoices(id: string, include_superseded = false) {
   })
 }
 
-export function useDocumentValidations(id: string, params?: { severity?: string; limit?: number; offset?: number }) {
+export function useDocumentValidations(
+  id: string,
+  params?: { severity?: string; limit?: number; offset?: number }
+) {
   return useQuery({
     queryKey: qk.documents.validations(id, params),
     queryFn: () => documentsApi.validations(id, params),
@@ -110,7 +127,9 @@ export function useReprocessDocument() {
   return useMutation({
     mutationFn: (id: string) => documentsApi.reprocess(id),
     onSuccess: async (_, id) => {
-      await invalidateForMutation(queryClient, "reprocess_document", { documentId: id })
+      await invalidateForMutation(queryClient, "reprocess_document", {
+        documentId: id,
+      })
       toast.success("Document re-processing started")
     },
     onError: (err: any) => {
@@ -132,4 +151,3 @@ export function useDeleteDocument() {
     },
   })
 }
-
