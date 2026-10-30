@@ -1,5 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { comparisonsApi, ComparisonCreate, ReconciliationCreate } from "./api"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
+import {
+  comparisonsApi,
+  ComparisonCreate,
+  FindingParams,
+  ReconciliationCreate,
+} from "./api"
 import { qk } from "@/lib/api/keys"
 import { invalidateForMutation } from "@/lib/api/invalidation"
 import { toast } from "sonner"
@@ -25,21 +35,39 @@ export function useComparison(id: string) {
       const comp = query.state.data
       if (!comp) return false
       if (comp.status === "QUEUED" || comp.status === "RUNNING") {
-        return 3000
+        return 1500
       }
       return false
     },
   })
 }
 
+/** Results exist only once the run has finished; `ready` gates the fetch. */
 export function useComparisonFindings(
   id: string,
-  params?: { limit?: number; offset?: number; status?: string }
+  params: FindingParams,
+  { ready = true }: { ready?: boolean } = {}
 ) {
   return useQuery({
-    queryKey: qk.comparisons.findings(id, params),
+    queryKey: qk.comparisons.findings(id, { ...params }),
     queryFn: () => comparisonsApi.comparisonFindings(id, params),
-    enabled: !!id,
+    enabled: !!id && ready,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  })
+}
+
+export function useRerunComparison() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => comparisonsApi.rerun(id),
+    onSuccess: async () => {
+      await invalidateForMutation(queryClient, "create_comparison")
+      toast.success("Running again on the current data")
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Could not run the comparison again")
+    },
   })
 }
 

@@ -14,7 +14,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.shared.enums import CurrencyCode
+from app.shared.enums import CurrencyCode, CurrencySource
 
 INVOICE_FIELDS = (
     "invoice_number",
@@ -170,6 +170,7 @@ class Evidence(BaseModel):
     bounding_box: list[float] | None = None
     extraction_method: str
     support: Literal["SUPPORTED", "WEAK", "UNSUPPORTED", "DERIVED"] = "WEAK"
+    reason: str | None = None  # why a DERIVED value was chosen
 
 
 class NormalizedLineItem(BaseModel):
@@ -208,6 +209,7 @@ class NormalizedInvoice(BaseModel):
     payment_reference: str | None = None
     currency: CurrencyCode | None = None
     currency_raw: str | None = None
+    currency_source: CurrencySource | None = None
     subtotal: Decimal | None = None
     discount_amount: Decimal | None = None
     shipping_amount: Decimal | None = None

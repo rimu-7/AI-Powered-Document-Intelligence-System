@@ -160,6 +160,7 @@ async def test_arithmetic_error_goes_to_review_and_correction_flow(client: Any, 
     assert r.json()["review_status"] == "APPROVED" and r.json()["approved_by"]
     history = (await client.get(f"/api/v1/invoices/{inv['id']}/history", headers=h)).json()
     assert [a["action_type"] for a in history] == ["ASSIGNMENT", "CORRECTION", "APPROVAL"]
+    assert all(a["reviewer_name"] for a in history)
     assert Decimal(history[1]["old_value_json"]) == spec.total_override
     doc = (await client.get(f"/api/v1/documents/{out['doc_id']}", headers=h)).json()
     assert doc["status"] == "COMPLETED"
@@ -202,6 +203,50 @@ async def test_pdf_to_pdf_comparison(client: Any, org: dict[str, Any], pipeline:
     assert {"subtotal", "total_amount", "__record__"} <= fields
     total = next(f for f in findings if f["field_name"] == "total_amount")
     assert total["evidence_json"]["left"]["field"]["page_number"] == 1
+
+
+async def test_comparison_detail_record_fields_export_rerun_and_staleness(client: Any, org: dict[str, Any], pipeline: Any) -> None:
+    h = org["headers"]
+    spec = random_invoice(random.Random(15), 105)
+    left = await _upload_and_process(client, h, pipeline, "base.pdf", invoice_pdf_bytes([spec]), "application/pdf")
+    spec.lines[0].unit_price += Decimal("2.00")
+    right = await _upload_and_process(client, h, pipeline, "revised.pdf", invoice_pdf_bytes([spec]), "application/pdf")
+    cid = (
+        await client.post("/api/v1/comparisons", headers=h, json={"left_document_id": left["doc_id"], "right_document_id": right["doc_id"]})
+    ).json()["comparison_id"]
+    pipeline()
+
+    detail = (await client.get(f"/api/v1/comparisons/{cid}", headers=h)).json()
+    assert {(d["side"], d["filename"]) for d in detail["documents"]} == {("left", "base.pdf"), ("right", "revised.pdf")}
+    assert detail["summary_json"]["missing_left_count"] == 0
+
+    # One record's field findings, and the record lists which fields differ.
+    record = (await client.get(f"/api/v1/comparisons/{cid}/findings", headers=h, params={"records_only": True})).json()["items"][0]
+    assert "total_amount" in record["difference_json"]["mismatched_fields"]
+    fields = (await client.get(f"/api/v1/comparisons/{cid}/findings", headers=h, params={"record_position": record["position"]})).json()
+    assert fields["items"] and all(f["field_name"] != "__record__" for f in fields["items"])
+
+    csv_out = await client.get(f"/api/v1/comparisons/{cid}/export.csv", headers=h)
+    assert csv_out.status_code == 200 and "total_amount" in csv_out.text
+    assert f"comparison-{cid}.csv" in csv_out.headers["content-disposition"]
+
+    # Reprocessing a document replaces its invoices, so the result is out of date.
+    r = await client.post(f"/api/v1/documents/{right['doc_id']}/reprocess", headers=h)
+    assert r.status_code == 202, r.text
+    pipeline()
+    stale = (await client.get(f"/api/v1/comparisons/{cid}", headers=h)).json()
+    assert stale["status"] == "STALE" and stale["stale_reason"] == "document reprocessed"
+
+    # Re-run: a new comparison over the current data; the old one is kept.
+    r = await client.post(f"/api/v1/comparisons/{cid}/rerun", headers=h)
+    assert r.status_code == 202, r.text
+    new_id = r.json()["comparison_id"]
+    assert new_id != cid
+    pipeline()
+    rerun = (await client.get(f"/api/v1/comparisons/{new_id}", headers=h)).json()
+    assert rerun["status"] == "COMPLETED" and rerun["parameters_json"]["rerun_of"] == cid
+    assert rerun["summary_json"]["mismatched_count"] == 1
+    assert (await client.get(f"/api/v1/comparisons/{cid}", headers=h)).json()["status"] == "STALE"
 
 
 async def test_pdf_to_spreadsheet_reconciliation(client: Any, org: dict[str, Any], pipeline: Any) -> None:

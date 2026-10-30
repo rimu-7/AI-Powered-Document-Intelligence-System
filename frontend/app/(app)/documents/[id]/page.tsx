@@ -1,5 +1,6 @@
 "use client"
 
+import { jobTypeLabel } from "@/lib/labels"
 import React, { use, useState } from "react"
 import { useQueryState, parseAsString } from "nuqs"
 import {
@@ -48,6 +49,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  GitCompare,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -152,6 +154,26 @@ export default function DocumentDetailPage({
             <Download className="h-3.5 w-3.5" />
             Download
           </Button>
+
+          {hasPermission(user?.role, "COMPARE_RUN") &&
+            [
+              "COMPLETED",
+              "COMPLETED_WITH_WARNINGS",
+              "REQUIRES_REVIEW",
+            ].includes(doc.status) && (
+              <Link
+                href={
+                  ["XLSX", "XLS", "CSV"].includes(doc.file_kind)
+                    ? `/compare/new?mode=reconciliation&sheet=${doc.id}`
+                    : `/compare/new?left=${doc.id}&pdf=${doc.id}`
+                }
+              >
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <GitCompare className="h-3.5 w-3.5" />
+                  Compare
+                </Button>
+              </Link>
+            )}
 
           {hasPermission(user?.role, "JOB_MANAGE") && (
             <Button
@@ -382,9 +404,16 @@ function InvoicesTab({ documentId }: { documentId: string }) {
   )
 }
 
+const PAGES_PER_SCREEN = 48
+
 function PagesTab({ documentId }: { documentId: string }) {
-  const { data, isLoading } = useDocumentPages(documentId, { limit: 100 })
+  const [offset, setOffset] = React.useState(0)
+  const { data, isLoading, isPlaceholderData } = useDocumentPages(documentId, {
+    limit: PAGES_PER_SCREEN,
+    offset,
+  })
   const pages = data?.items ?? []
+  const total = data?.total ?? 0
 
   if (isLoading)
     return <div className="h-64 animate-pulse rounded-lg bg-muted" />
@@ -393,41 +422,72 @@ function PagesTab({ documentId }: { documentId: string }) {
       <EmptyState title="No pages found" description="No pages parsed yet." />
     )
 
+  const from = offset + 1
+  const to = Math.min(offset + pages.length, total)
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-      {pages.map((p) => {
-        const imageUrl = documentsApi.getPageImageUrl(
-          documentId,
-          p.page_number,
-          300
-        )
-        return (
-          <div
-            key={p.id}
-            className="group flex flex-col overflow-hidden rounded-lg border bg-card"
-          >
-            <div className="relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-muted/40">
-              <FileText className="pointer-events-none absolute h-8 w-8 text-muted-foreground/30" />
-              <img
-                src={imageUrl}
-                alt={`Page ${p.page_number}`}
-                loading="lazy"
-                className="relative z-10 h-full w-full object-contain transition-transform duration-200 group-hover:scale-105"
-                onError={(e) => {
-                  // Fallback placeholder if image endpoint fails
-                  ;(e.target as HTMLElement).style.display = "none"
-                }}
-              />
-            </div>
-            <div className="flex items-center justify-between border-t p-2.5 text-xs">
-              <span className="font-medium">Page {p.page_number}</span>
-              <span className="font-mono text-[10px] text-muted-foreground">
-                {p.character_count} chars
-              </span>
-            </div>
+    <div className="space-y-4">
+      {total > PAGES_PER_SCREEN && (
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>
+            Pages {from}–{to} of {total}
+          </span>
+          <div className="flex gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              disabled={offset === 0 || isPlaceholderData}
+              onClick={() => setOffset(Math.max(0, offset - PAGES_PER_SCREEN))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              disabled={to >= total || isPlaceholderData}
+              onClick={() => setOffset(offset + PAGES_PER_SCREEN)}
+            >
+              Next
+            </Button>
           </div>
-        )
-      })}
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        {pages.map((p) => {
+          const imageUrl = documentsApi.getPageImageUrl(
+            documentId,
+            p.page_number,
+            300
+          )
+          return (
+            <div
+              key={p.id}
+              className="group flex flex-col overflow-hidden rounded-lg border bg-card"
+            >
+              <div className="relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-muted/40">
+                <FileText className="pointer-events-none absolute h-8 w-8 text-muted-foreground/30" />
+                <img
+                  src={imageUrl}
+                  alt={`Page ${p.page_number}`}
+                  loading="lazy"
+                  className="relative z-10 h-full w-full object-contain transition-transform duration-200 group-hover:scale-105"
+                  onError={(e) => {
+                    // Fallback placeholder if image endpoint fails
+                    ;(e.target as HTMLElement).style.display = "none"
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between border-t p-2.5 text-xs">
+                <span className="font-medium">Page {p.page_number}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {p.character_count} chars
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -734,8 +794,8 @@ function JobsTab({ documentId }: { documentId: string }) {
           >
             <div className="flex items-start justify-between gap-2">
               <div>
-                <span className="font-mono text-xs font-semibold uppercase">
-                  {job.job_type}
+                <span className="text-xs font-semibold">
+                  {jobTypeLabel(job.job_type)}
                 </span>
                 <span className="block font-mono text-[10px] text-muted-foreground">
                   Attempt #{job.attempt_number}
@@ -785,7 +845,7 @@ function JobsTab({ documentId }: { documentId: string }) {
             {jobs.map((job) => (
               <TableRow key={job.id}>
                 <TableCell className="font-mono text-xs font-medium">
-                  {job.job_type}
+                  {jobTypeLabel(job.job_type)}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={job.state} />

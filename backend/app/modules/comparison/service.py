@@ -212,6 +212,8 @@ def run_comparison(session: Session, comparison: DocumentComparison, day_first: 
         summary = {
             "matched_count": result.summary["matched_count"],
             "mismatched_count": result.summary["mismatched_count"],
+            "missing_left_count": result.summary["missing_left_count"],
+            "missing_right_count": result.summary["missing_right_count"],
             "missing_in_pdf_count": result.summary["missing_left_count"],
             "missing_in_spreadsheet_count": result.summary["missing_right_count"],
             "ambiguous_count": result.summary["ambiguous_count"],

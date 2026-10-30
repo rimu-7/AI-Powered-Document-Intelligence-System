@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client"
+import type { Res } from "@/lib/api/typed"
 import type { components } from "@/lib/api/schema"
 
 export type OrgStats = components["schemas"]["OrgStats"]
@@ -18,7 +19,7 @@ export interface SystemHealth {
 
 export const adminApi = {
   async getStats(): Promise<OrgStats> {
-    const res = await apiClient.get<OrgStats>("/admin/stats")
+    const res = await apiClient.get<Res<"GET /admin/stats">>("/admin/stats")
     return res.data
   },
 
@@ -26,9 +27,12 @@ export const adminApi = {
     limit?: number
     offset?: number
   }): Promise<Page_DeadLetter_> {
-    const res = await apiClient.get<Page_DeadLetter_>("/admin/dead-letter", {
-      params,
-    })
+    const res = await apiClient.get<Res<"GET /admin/dead-letter">>(
+      "/admin/dead-letter",
+      {
+        params,
+      }
+    )
     return res.data
   },
 
@@ -39,7 +43,7 @@ export const adminApi = {
     limit?: number
     offset?: number
   }): Promise<Page_AuditEventOut_> {
-    const res = await apiClient.get<Page_AuditEventOut_>(
+    const res = await apiClient.get<Res<"GET /admin/audit-events">>(
       "/admin/audit-events",
       { params }
     )
@@ -50,12 +54,12 @@ export const adminApi = {
     limit?: number
     offset?: number
   }): Promise<Page_UserOut_> {
-    const res = await apiClient.get<Page_UserOut_>("/users", { params })
+    const res = await apiClient.get<Res<"GET /users">>("/users", { params })
     return res.data
   },
 
   async createUser(payload: CreateUserRequest): Promise<UserOut> {
-    const res = await apiClient.post<UserOut>("/users", payload)
+    const res = await apiClient.post<Res<"POST /users">>("/users", payload)
     return res.data
   },
 
@@ -63,12 +67,17 @@ export const adminApi = {
     userId: string,
     payload: UpdateUserRequest
   ): Promise<UserOut> {
-    const res = await apiClient.patch<UserOut>(`/users/${userId}`, payload)
+    const res = await apiClient.patch<Res<"PATCH /users/{user_id}">>(
+      `/users/${userId}`,
+      payload
+    )
     return res.data
   },
 
   async revokeUserSessions(userId: string): Promise<void> {
-    await apiClient.post(`/users/${userId}/revoke-sessions`)
+    await apiClient.post<Res<"POST /users/{user_id}/revoke-sessions">>(
+      `/users/${userId}/revoke-sessions`
+    )
   },
 
   async getHealthReady(): Promise<SystemHealth> {

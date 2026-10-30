@@ -1,6 +1,8 @@
 "use client"
 
+import { jobTypeLabel } from "@/lib/labels"
 import React from "react"
+import { isTerminal } from "@/features/jobs/hooks"
 import { PageHeader } from "@/components/page-header"
 import { useCurrentUser } from "@/features/auth/hooks"
 import { useOrgStats } from "@/features/admin/hooks"
@@ -128,11 +130,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
-              {
-                recentJobs.filter(
-                  (j) => !["COMPLETED", "FAILED", "CANCELLED"].includes(j.state)
-                ).length
-              }
+              {recentJobs.filter((j) => !isTerminal(j.state)).length}
             </div>
             <Link
               href="/jobs"
@@ -253,7 +251,7 @@ export default function DashboardPage() {
                         className="flex items-center gap-1.5 truncate text-sm font-medium transition-colors hover:text-primary"
                       >
                         <span className="font-mono text-xs">
-                          {job.job_type}
+                          {jobTypeLabel(job.job_type)}
                         </span>
                         <span className="font-mono text-[10px] text-muted-foreground">
                           (attempt #{job.attempt_number})

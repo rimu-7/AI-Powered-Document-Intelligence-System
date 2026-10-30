@@ -152,7 +152,13 @@ def test_reconciliation_cases() -> None:
     assert total6.status == FindingStatus.NOT_COMPARABLE  # never compare across currencies
     date7 = next(x for x in f if x.field_name == "invoice_date" and "INV-7 " in (x.record_key or ""))
     assert date7.status == FindingStatus.MISMATCH and date7.difference == {"days": 8}
-    assert any(x.status == FindingStatus.NOT_COMPARABLE and "different supplier" in str(x.difference) for x in f)
+    # Same number from another supplier is reported on the record itself, not as a loose finding.
+    inv4 = next(x for x in f if x.field_name == "__record__" and (x.record_key or "").startswith("INV-4 ") and x.left)
+    assert inv4.status == FindingStatus.MISSING_RIGHT and "different supplier" in str(inv4.difference)
+    assert inv4.difference["suppliers"] == ["Other Supplier Inc"]
+    # Every finding that is not a record belongs to the record before it.
+    keys = [x.record_key for x in f if x.field_name == "__record__"]
+    assert all(x.field_name == "__record__" or x.record_key in keys for x in f)
     s = result.summary
     assert s["duplicate_count"] == 2  # INV-5 and INV-8 each appear twice in the register
     assert s["missing_left_count"] >= 2  # INV-8 and the INV-4 row from the other supplier
@@ -202,3 +208,47 @@ def test_identical_duplicate_rows_match_first_and_report_duplicate() -> None:
     sheet = [rec("r1", "INV-9", "ABC Ltd", "90.00"), rec("r2", "INV-9", "ABC Ltd", "90.00")]
     s = match_records(pdf, sheet, MatchOptions()).summary
     assert s["matched_count"] == 1 and s["duplicate_count"] == 1 and s["ambiguous_count"] == 0 and s["missing_left_count"] == 0
+
+
+def test_record_without_number_pairs_only_on_supplier_date_and_total() -> None:
+    # The register row has no invoice number: supplier, date and total identify it,
+    # but the pair needs confirmation (AMBIGUOUS), never an authoritative MATCH.
+    result = match_records([rec("p", "INV-9", "ABC Ltd", "90.00", source="invoice")], [rec("r", None, "ABC Ltd", "90.00")], MatchOptions())
+    assert result.summary["ambiguous_count"] == 1
+    assert result.summary["missing_left_count"] == 0 and result.summary["missing_right_count"] == 0
+    record = next(f for f in result.findings if f.field_name == "__record__")
+    assert record.difference["match_quality"] == "no_invoice_number"
+    number = next(f for f in result.findings if f.field_name == "invoice_number")
+    assert number.status == FindingStatus.NOT_COMPARABLE
+
+    # A different total or an unknown supplier is not enough.
+    assert (
+        match_records([rec("p", None, "ABC Ltd", "90.00", source="invoice")], [rec("r", None, "ABC Ltd", "91.00")], MatchOptions()).summary[
+            "missing_right_count"
+        ]
+        == 1
+    )
+    assert (
+        match_records([rec("p", None, None, "90.00", source="invoice")], [rec("r", None, "ABC Ltd", "90.00")], MatchOptions()).summary[
+            "missing_right_count"
+        ]
+        == 1
+    )
+
+    # Two equally good candidates: ambiguous with both listed, nothing chosen.
+    two = match_records(
+        [rec("p", None, "ABC Ltd", "90.00", source="invoice")],
+        [rec("r1", "A-1", "ABC Ltd", "90.00"), rec("r2", "A-2", "ABC Ltd", "90.00")],
+        MatchOptions(fuzzy_invoice_numbers=False),
+    )
+    amb = next(f for f in two.findings if f.field_name == "__record__" and f.status == FindingStatus.AMBIGUOUS)
+    assert len(amb.right) == 2 and two.summary["missing_left_count"] == 2
+
+
+def test_record_finding_lists_the_fields_that_differ() -> None:
+    result = match_records(
+        [rec("p", "INV-1", "ABC Ltd", "100.00", source="invoice")], [rec("r", "INV-1", "ABC Ltd", "120.00", day=4)], MatchOptions()
+    )
+    record = next(f for f in result.findings if f.field_name == "__record__")
+    assert record.status == FindingStatus.MISMATCH
+    assert set(record.difference["mismatched_fields"]) == {"invoice_date", "total_amount"}

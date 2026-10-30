@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client"
+import type { Res } from "@/lib/api/typed"
 import axios from "axios"
 import type { components } from "@/lib/api/schema"
 
@@ -11,7 +12,7 @@ export const uploadApi = {
     filename: string,
     file_size_bytes: number
   ): Promise<DirectUploadTicketOut> {
-    const res = await apiClient.post<DirectUploadTicketOut>(
+    const res = await apiClient.post<Res<"POST /documents/direct-uploads">>(
       "/documents/direct-uploads",
       {
         filename,
@@ -45,9 +46,9 @@ export const uploadApi = {
   },
 
   async completeDirectUpload(uploadId: string): Promise<any> {
-    const res = await apiClient.post(
-      `/documents/direct-uploads/${uploadId}/complete`
-    )
+    const res = await apiClient.post<
+      Res<"POST /documents/direct-uploads/{upload_id}/complete">
+    >(`/documents/direct-uploads/${uploadId}/complete`)
     return res.data
   },
 
@@ -59,7 +60,7 @@ export const uploadApi = {
     const formData = new FormData()
     files.forEach((file) => formData.append("files", file))
 
-    const res = await apiClient.post<UploadResponse>(
+    const res = await apiClient.post<Res<"POST /documents/upload">>(
       "/documents/upload",
       formData,
       {

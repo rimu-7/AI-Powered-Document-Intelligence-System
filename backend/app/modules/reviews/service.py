@@ -34,6 +34,7 @@ from app.modules.reviews.schemas import FieldChange
 from app.modules.validation.models import ValidationIssue
 from app.shared.enums import (
     TERMINAL_RUN_STATES,
+    CurrencySource,
     DocumentStatus,
     DocumentType,
     JobType,
@@ -220,6 +221,7 @@ async def apply_corrections(
                 raise ValidationFailedError("currency: must be a supported ISO 4217 code", code="INVALID_CORRECTION_VALUE")
             record(path, invoice.currency, new_cur)
             invoice.currency = new_cur
+            invoice.currency_source = CurrencySource.HUMAN if new_cur is not None else None
         elif path == "amounts_tax_inclusive":
             if value is not None and not isinstance(value, bool):
                 raise ValidationFailedError(f"{path}: expected boolean", code="INVALID_CORRECTION_VALUE")
@@ -280,6 +282,7 @@ async def apply_corrections(
                 "corrected_by": str(principal.user_id),
                 "corrected_at": datetime.now(UTC).isoformat(),
             }
+            evidence[path].pop("reason", None)  # an automatic decision's reason no longer applies
 
     invoice.corrected_fields_json = sorted(corrected)
     invoice.field_support_json = support

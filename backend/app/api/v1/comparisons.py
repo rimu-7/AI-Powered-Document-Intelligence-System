@@ -17,6 +17,7 @@ from app.modules.auditing.service import record_audit
 from app.modules.comparison.mapping import suggest_mapping, validate_mapping
 from app.modules.comparison.models import ComparisonDocument, ComparisonFinding, DocumentComparison
 from app.modules.comparison.schemas import (
+    ComparedDocument,
     ComparisonAccepted,
     ComparisonCreate,
     ComparisonOut,
@@ -27,6 +28,7 @@ from app.modules.comparison.service import findings_to_csv
 from app.modules.documents.models import Document, DocumentTable
 from app.modules.documents.service import get_document
 from app.modules.extraction.models import InvoiceRecord
+from app.modules.jobs.models import ProcessingRun
 from app.modules.jobs.service import build_run
 from app.shared.enums import ComparisonStatus, ComparisonType, DocumentStatus, FindingStatus, JobType
 from app.shared.pagination import Page, PageParams, page_params
@@ -200,6 +202,44 @@ async def create_reconciliation(
     return await _idempotent(session, principal, "reconciliations.create", idempotency_key, body.model_dump(mode="json"), create)
 
 
+async def _outs(session: SessionDep, comparisons: list[DocumentComparison]) -> list[ComparisonOut]:
+    """ComparisonOut with the participating documents' names and the failure reason."""
+    if not comparisons:
+        return []
+    ids = [c.id for c in comparisons]
+    doc_rows = (
+        await session.execute(
+            select(ComparisonDocument.comparison_id, ComparisonDocument.side, Document)
+            .join(Document, Document.id == ComparisonDocument.document_id)
+            .where(ComparisonDocument.comparison_id.in_(ids))
+            .order_by(ComparisonDocument.side, Document.original_filename)
+        )
+    ).all()
+    docs: dict[uuid.UUID, list[ComparedDocument]] = {}
+    for comparison_id, side, doc in doc_rows:
+        docs.setdefault(comparison_id, []).append(
+            ComparedDocument(
+                id=doc.id, side=side, filename=doc.original_filename, file_kind=doc.file_kind.value, deleted=doc.deleted_at is not None
+            )
+        )
+    run_ids = [c.processing_run_id for c in comparisons if c.processing_run_id and c.status == ComparisonStatus.FAILED]
+    errors: dict[uuid.UUID, str | None] = {}
+    if run_ids:
+        for run_id, message in (
+            await session.execute(select(ProcessingRun.id, ProcessingRun.sanitized_error_message).where(ProcessingRun.id.in_(run_ids)))
+        ).all():
+            errors[run_id] = message
+    out = []
+    for c in comparisons:
+        item = ComparisonOut.model_validate(c)
+        item.documents = docs.get(c.id, [])
+        if c.status == ComparisonStatus.FAILED:
+            item.error_message = errors.get(c.processing_run_id) if c.processing_run_id else None  # type: ignore[arg-type]
+            item.error_message = item.error_message or "The comparison job failed or was cancelled."
+        out.append(item)
+    return out
+
+
 async def _get_comparison(
     session: SessionDep, principal: Principal, comparison_id: uuid.UUID, kind: ComparisonType | None
 ) -> DocumentComparison:
@@ -237,13 +277,33 @@ async def list_comparisons(
         .scalars()
         .all()
     )
-    return Page(items=[ComparisonOut.model_validate(r) for r in rows], total=total, limit=page.limit, offset=page.offset)
+    return Page(items=await _outs(session, list(rows)), total=total, limit=page.limit, offset=page.offset)
 
 
 async def _findings(
-    session: SessionDep, comparison: DocumentComparison, page: PageParams, finding_status: FindingStatus | None, records_only: bool
+    session: SessionDep,
+    comparison: DocumentComparison,
+    page: PageParams,
+    finding_status: FindingStatus | None,
+    records_only: bool,
+    record_position: int | None = None,
 ) -> Page[FindingOut]:
     stmt = select(ComparisonFinding).where(ComparisonFinding.comparison_id == comparison.id)
+    if record_position is not None:
+        # The field findings of one record: everything after its __record__ row
+        # up to the next record.
+        next_record = (
+            await session.execute(
+                select(func.min(ComparisonFinding.position)).where(
+                    ComparisonFinding.comparison_id == comparison.id,
+                    ComparisonFinding.field_name == "__record__",
+                    ComparisonFinding.position > record_position,
+                )
+            )
+        ).scalar_one()
+        stmt = stmt.where(ComparisonFinding.position > record_position, ComparisonFinding.field_name != "__record__")
+        if next_record is not None:
+            stmt = stmt.where(ComparisonFinding.position < next_record)
     if finding_status:
         stmt = stmt.where(ComparisonFinding.status == finding_status)
     if records_only:
@@ -254,8 +314,9 @@ async def _findings(
 
 
 @router.get("/comparisons/{comparison_id}", response_model=ComparisonOut)
-async def get_comparison(comparison_id: uuid.UUID, principal: Reader, session: SessionDep) -> DocumentComparison:
-    return await _get_comparison(session, principal, comparison_id, None)
+async def get_comparison(comparison_id: uuid.UUID, principal: Reader, session: SessionDep) -> ComparisonOut:
+    comparison = await _get_comparison(session, principal, comparison_id, None)
+    return (await _outs(session, [comparison]))[0]
 
 
 @router.get("/comparisons/{comparison_id}/findings", response_model=Page[FindingOut])
@@ -266,14 +327,67 @@ async def comparison_findings(
     page: Annotated[PageParams, Depends(page_params)],
     finding_status: FindingStatus | None = None,
     records_only: bool = False,
+    record_position: Annotated[int | None, Query(ge=0, description="Only the field findings of the record at this position")] = None,
 ) -> Page[FindingOut]:
     comparison = await _get_comparison(session, principal, comparison_id, None)
-    return await _findings(session, comparison, page, finding_status, records_only)
+    return await _findings(session, comparison, page, finding_status, records_only, record_position)
+
+
+@router.post("/comparisons/{comparison_id}/rerun", response_model=ComparisonAccepted, status_code=status.HTTP_202_ACCEPTED)
+async def rerun_comparison(comparison_id: uuid.UUID, principal: Comparer, session: SessionDep) -> ComparisonAccepted:
+    """Run a comparison or reconciliation again with the same documents and settings, on the current data.
+
+    The earlier run and its findings are kept."""
+    old = await _get_comparison(session, principal, comparison_id, None)
+    if old.status in (ComparisonStatus.QUEUED, ComparisonStatus.RUNNING):
+        raise ConflictError("This comparison is still running", code="COMPARISON_RUNNING")
+    params = dict(old.parameters_json or {})
+    sides = (
+        await session.execute(
+            select(ComparisonDocument.document_id, ComparisonDocument.side).where(ComparisonDocument.comparison_id == old.id)
+        )
+    ).all()
+    for doc_id, _side in sides:
+        await _ready_document(session, principal, doc_id)
+    if old.comparison_type == ComparisonType.PDF_PDF:
+        assert old.left_document_id is not None
+        for side, doc_id in (("left", old.left_document_id), ("right", old.right_document_id)):
+            selected = params.get(f"{side}_invoice_ids")
+            if selected:
+                try:
+                    await _check_invoice_ids(session, principal, doc_id, [uuid.UUID(i) for i in selected])
+                except ValidationFailedError as exc:
+                    raise ConflictError(
+                        "Some selected invoices were replaced by reprocessing; start a new comparison", code="SELECTION_OUTDATED"
+                    ) from exc
+        job_type = JobType.COMPARISON
+    else:
+        job_type = JobType.RECONCILIATION
+    comparison = DocumentComparison(
+        id=uuid.uuid4(),
+        organization_id=principal.organization_id,
+        left_document_id=old.left_document_id,
+        right_document_id=old.right_document_id,
+        comparison_type=old.comparison_type,
+        matching_strategy=old.matching_strategy,
+        status=ComparisonStatus.QUEUED,
+        parameters_json={**params, "rerun_of": str(old.id)},
+        created_by=principal.user_id,
+    )
+    return await _create(session, principal, comparison, job_type, [(d, side) for d, side in sides])
+
+
+@router.get("/comparisons/{comparison_id}/export.csv", response_class=Response, responses={200: {"content": {"text/csv": {}}}})
+async def export_comparison(comparison_id: uuid.UUID, principal: Reader, session: SessionDep) -> Response:
+    """Every finding as CSV (cells starting with = + - @ are neutralized)."""
+    comparison = await _get_comparison(session, principal, comparison_id, None)
+    return await _export(session, principal, comparison)
 
 
 @router.get("/reconciliations/{reconciliation_id}", response_model=ComparisonOut)
-async def get_reconciliation(reconciliation_id: uuid.UUID, principal: Reader, session: SessionDep) -> DocumentComparison:
-    return await _get_comparison(session, principal, reconciliation_id, ComparisonType.PDF_SPREADSHEET)
+async def get_reconciliation(reconciliation_id: uuid.UUID, principal: Reader, session: SessionDep) -> ComparisonOut:
+    comparison = await _get_comparison(session, principal, reconciliation_id, ComparisonType.PDF_SPREADSHEET)
+    return (await _outs(session, [comparison]))[0]
 
 
 @router.get("/reconciliations/{reconciliation_id}/findings", response_model=Page[FindingOut])
@@ -293,8 +407,12 @@ async def reconciliation_findings(
 async def export_reconciliation(reconciliation_id: uuid.UUID, principal: Reader, session: SessionDep) -> Response:
     """Sanitized CSV export (cells starting with = + - @ are neutralized)."""
     comparison = await _get_comparison(session, principal, reconciliation_id, ComparisonType.PDF_SPREADSHEET)
+    return await _export(session, principal, comparison)
+
+
+async def _export(session: SessionDep, principal: Principal, comparison: DocumentComparison) -> Response:
     if comparison.status not in (ComparisonStatus.COMPLETED, ComparisonStatus.STALE):
-        raise ConflictError("Reconciliation has not completed", code="NOT_COMPLETED")
+        raise ConflictError("The comparison has not completed", code="NOT_COMPLETED")
     rows = (
         (
             await session.execute(
@@ -311,7 +429,7 @@ async def export_reconciliation(reconciliation_id: uuid.UUID, principal: Reader,
         session,
         organization_id=principal.organization_id,
         actor_id=principal.user_id,
-        action="reconciliation.exported",
+        action=f"{comparison.comparison_type.value.lower()}.exported",
         resource_type="comparison",
         resource_id=comparison.id,
     )
@@ -319,5 +437,9 @@ async def export_reconciliation(reconciliation_id: uuid.UUID, principal: Reader,
     return Response(
         content=findings_to_csv(rows),
         media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="reconciliation-{comparison.id}.csv"'},
+        headers={"Content-Disposition": f'attachment; filename="{_export_name(comparison)}-{comparison.id}.csv"'},
     )
+
+
+def _export_name(comparison: DocumentComparison) -> str:
+    return "comparison" if comparison.comparison_type == ComparisonType.PDF_PDF else "reconciliation"

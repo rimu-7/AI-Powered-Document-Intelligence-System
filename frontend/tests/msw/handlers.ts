@@ -1,5 +1,10 @@
 import { http, HttpResponse } from "msw"
 
+/** The backend's paginated response shape (`Page[T]`). */
+export function page<T>(items: T[]) {
+  return { items, total: items.length, limit: 50, offset: 0 }
+}
+
 export const mockUser = {
   id: "usr-admin-1",
   email: "admin@docintel.local",
@@ -41,6 +46,10 @@ export const mockInvoice = {
   customer_name: "DocIntel Corp",
   customer_tax_id: "US-123456789",
   currency: "USD",
+  currency_raw: "USD",
+  currency_source: "PRINTED" as const,
+  currency_reason: null,
+  currency_suggestions: [],
   subtotal: "1000.00",
   tax_amount: "100.00",
   total_amount: "1100.00",
@@ -50,6 +59,9 @@ export const mockInvoice = {
   assigned_at: null,
   assigned_by: null,
   version: 1,
+  segment_index: 0,
+  page_start: 1,
+  page_end: 1,
   corrected_fields_json: [],
   source_evidence_json: {
     total_amount: {
@@ -89,7 +101,47 @@ export const mockValidationIssues = [
   },
 ]
 
+export const mockCurrencySettings = {
+  default_currency: null,
+  symbol_rules: {},
+  symbols: [
+    {
+      symbol: "$",
+      candidates: ["USD", "CAD", "AUD", "NZD", "SGD", "HKD", "MXN"],
+      rule: null,
+      learned: null,
+      learned_from: 0,
+    },
+    {
+      symbol: "kr",
+      candidates: ["SEK", "NOK", "DKK", "ISK"],
+      rule: null,
+      learned: "SEK",
+      learned_from: 3,
+    },
+  ],
+  learn_threshold: 2,
+  pending_invoices: 3,
+}
+
 export const handlers = [
+  http.get("*/bff/api/v1/organization/currency-settings", () => {
+    return HttpResponse.json(mockCurrencySettings)
+  }),
+
+  http.put(
+    "*/bff/api/v1/organization/currency-settings",
+    async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({
+        ...mockCurrencySettings,
+        ...body,
+        pending_invoices: 0,
+        resolved_invoices: 2,
+      })
+    }
+  ),
+
   http.get("*/bff/api/v1/auth/me", () => {
     return HttpResponse.json(mockUser)
   }),
@@ -138,17 +190,30 @@ export const handlers = [
   }),
 
   http.get("*/bff/api/v1/documents/:id/pages", () => {
-    return HttpResponse.json([
-      {
-        id: "page-1",
-        document_id: "doc-001",
-        page_number: 1,
-        page_width: 800,
-        page_height: 1000,
-        ocr_confidence: 0.98,
-        status: "COMPLETED",
-      },
-    ])
+    return HttpResponse.json({
+      items: [
+        {
+          id: "page-1",
+          document_id: "doc-001",
+          page_number: 1,
+          page_width: 800,
+          page_height: 1000,
+          ocr_confidence: 0.98,
+          status: "COMPLETED",
+        },
+      ],
+      total: 1,
+      limit: 200,
+      offset: 0,
+    })
+  }),
+
+  http.get("*/bff/api/v1/documents/:id/invoices", () => {
+    return HttpResponse.json([mockInvoice])
+  }),
+
+  http.get("*/bff/api/v1/jobs/active", () => {
+    return HttpResponse.json([])
   }),
 
   http.get("*/bff/api/v1/invoices/:id", ({ params }) => {
@@ -163,7 +228,11 @@ export const handlers = [
   }),
 
   http.get("*/bff/api/v1/invoices/:id/validations", () => {
-    return HttpResponse.json(mockValidationIssues)
+    return HttpResponse.json(page(mockValidationIssues))
+  }),
+
+  http.get("*/bff/api/v1/documents/:id/jobs", () => {
+    return HttpResponse.json(page([]))
   }),
 
   http.get("*/bff/api/v1/invoices/:id/history", () => {

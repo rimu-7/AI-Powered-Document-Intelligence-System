@@ -144,6 +144,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organization/currency-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Currency Settings */
+        get: operations["get_currency_settings_api_v1_organization_currency_settings_get"];
+        /** Update Currency Settings */
+        put: operations["update_currency_settings_api_v1_organization_currency_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/upload": {
         parameters: {
             query?: never;
@@ -411,6 +429,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/jobs/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Active Jobs
+         * @description Documents being processed now, plus those that finished in the last two minutes.
+         */
+        get: operations["active_jobs_api_v1_jobs_active_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -595,7 +633,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Invoice History */
+        /**
+         * Invoice History
+         * @description Every correction, approval and rejection of this invoice, oldest first, with the reviewer's name.
+         */
         get: operations["invoice_history_api_v1_invoices__invoice_id__history_get"];
         put?: never;
         post?: never;
@@ -830,6 +871,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/comparisons/{comparison_id}/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rerun Comparison
+         * @description Run a comparison or reconciliation again with the same documents and settings, on the current data.
+         *
+         *     The earlier run and its findings are kept.
+         */
+        post: operations["rerun_comparison_api_v1_comparisons__comparison_id__rerun_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comparisons/{comparison_id}/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Comparison
+         * @description Every finding as CSV (cells starting with = + - @ are neutralized).
+         */
+        get: operations["export_comparison_api_v1_comparisons__comparison_id__export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reconciliations/{reconciliation_id}": {
         parameters: {
             query?: never;
@@ -1019,6 +1102,69 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ActiveJobOut
+         * @description A document being processed, or one that finished moments ago.
+         */
+        ActiveJobOut: {
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Filename */
+            filename: string;
+            file_kind: components["schemas"]["FileKind"];
+            state: components["schemas"]["RunState"];
+            /** Pages Total */
+            pages_total: number;
+            /** Pages Completed */
+            pages_completed: number;
+            /** Pages Failed */
+            pages_failed: number;
+            /** Progress Percent */
+            progress_percent: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at: string | null;
+            /** Sanitized Error Message */
+            sanitized_error_message: string | null;
+            /**
+             * Invoices
+             * @description Invoices extracted so far
+             */
+            invoices: number;
+            /**
+             * Open Reviews
+             * @description Invoices from this document waiting for a reviewer
+             */
+            open_reviews: number;
+        };
+        /** AmbiguousSymbol */
+        AmbiguousSymbol: {
+            /** Symbol */
+            symbol: string;
+            /** Candidates */
+            candidates: components["schemas"]["CurrencyCode"][];
+            /** @description The organization's rule for this symbol, if any */
+            rule: components["schemas"]["CurrencyCode"] | null;
+            /** @description What reviewers consistently chose for this symbol, if learned */
+            learned: components["schemas"]["CurrencyCode"] | null;
+            /**
+             * Learned From
+             * @description Reviewer decisions behind the learned currency
+             */
+            learned_from: number;
+        };
         /** ApprovalRequest */
         ApprovalRequest: {
             /** Expected Version */
@@ -1057,6 +1203,28 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** ComparedDocument */
+        ComparedDocument: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Side
+             * @description left (PDF side) or right (second PDF or spreadsheet)
+             */
+            side: string;
+            /** Filename */
+            filename: string;
+            /** File Kind */
+            file_kind: string;
+            /**
+             * Deleted
+             * @default false
+             */
+            deleted: boolean;
         };
         /** ComparisonAccepted */
         ComparisonAccepted: {
@@ -1157,6 +1325,13 @@ export interface components {
             created_at: string;
             /** Completed At */
             completed_at: string | null;
+            /** Documents */
+            documents?: components["schemas"]["ComparedDocument"][];
+            /**
+             * Error Message
+             * @description Why the run failed, when status is FAILED
+             */
+            error_message?: string | null;
         };
         /**
          * ComparisonStatus
@@ -1217,6 +1392,74 @@ export interface components {
             /** Minor Units */
             minor_units: number;
         };
+        /** CurrencySettingsOut */
+        CurrencySettingsOut: {
+            default_currency: components["schemas"]["CurrencyCode"] | null;
+            /** Symbol Rules */
+            symbol_rules: {
+                [key: string]: components["schemas"]["CurrencyCode"];
+            };
+            /** Symbols */
+            symbols: components["schemas"]["AmbiguousSymbol"][];
+            /**
+             * Learn Threshold
+             * @description Reviewer decisions needed before a symbol is resolved automatically
+             */
+            learn_threshold: number;
+            /**
+             * Pending Invoices
+             * @description Invoices still waiting for a currency
+             */
+            pending_invoices: number;
+        };
+        /** CurrencySettingsUpdate */
+        CurrencySettingsUpdate: {
+            default_currency?: components["schemas"]["CurrencyCode"] | null;
+            /**
+             * Symbol Rules
+             * @description For example {"$": "USD"}
+             */
+            symbol_rules?: {
+                [key: string]: components["schemas"]["CurrencyCode"];
+            };
+            /**
+             * Apply To Pending
+             * @description Also resolve invoices that are waiting for a currency
+             * @default true
+             */
+            apply_to_pending: boolean;
+        };
+        /** CurrencySettingsUpdated */
+        CurrencySettingsUpdated: {
+            default_currency: components["schemas"]["CurrencyCode"] | null;
+            /** Symbol Rules */
+            symbol_rules: {
+                [key: string]: components["schemas"]["CurrencyCode"];
+            };
+            /** Symbols */
+            symbols: components["schemas"]["AmbiguousSymbol"][];
+            /**
+             * Learn Threshold
+             * @description Reviewer decisions needed before a symbol is resolved automatically
+             */
+            learn_threshold: number;
+            /**
+             * Pending Invoices
+             * @description Invoices still waiting for a currency
+             */
+            pending_invoices: number;
+            /**
+             * Resolved Invoices
+             * @description Waiting invoices that received a currency from this change
+             */
+            resolved_invoices: number;
+        };
+        /**
+         * CurrencySource
+         * @description How an invoice's currency was decided, strongest evidence first.
+         * @enum {string}
+         */
+        CurrencySource: "PRINTED" | "DOCUMENT_CONTEXT" | "SUPPLIER_HISTORY" | "ORGANIZATION_RULE" | "LEARNED" | "ORGANIZATION_DEFAULT" | "HUMAN";
         /** DeadLetter */
         DeadLetter: {
             job: components["schemas"]["JobOut"];
@@ -1505,6 +1748,18 @@ export interface components {
             currency: components["schemas"]["CurrencyCode"] | null;
             /** Currency Raw */
             currency_raw: string | null;
+            /** @description How the currency was decided; null while it is unresolved */
+            currency_source: components["schemas"]["CurrencySource"] | null;
+            /**
+             * Currency Reason
+             * @description Why the currency was chosen automatically
+             */
+            currency_reason: string | null;
+            /**
+             * Currency Suggestions
+             * @description Likely currencies, most likely first, while unresolved
+             */
+            currency_suggestions: components["schemas"]["CurrencyCode"][];
             /** Subtotal */
             subtotal: string | null;
             /** Discount Amount */
@@ -1608,6 +1863,18 @@ export interface components {
             currency: components["schemas"]["CurrencyCode"] | null;
             /** Currency Raw */
             currency_raw: string | null;
+            /** @description How the currency was decided; null while it is unresolved */
+            currency_source: components["schemas"]["CurrencySource"] | null;
+            /**
+             * Currency Reason
+             * @description Why the currency was chosen automatically
+             */
+            currency_reason: string | null;
+            /**
+             * Currency Suggestions
+             * @description Likely currencies, most likely first, while unresolved
+             */
+            currency_suggestions: components["schemas"]["CurrencyCode"][];
             /** Subtotal */
             subtotal: string | null;
             /** Discount Amount */
@@ -2141,6 +2408,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Reviewer Name */
+            reviewer_name?: string | null;
         };
         /**
          * ReviewActionType
@@ -2922,6 +3191,59 @@ export interface operations {
             };
         };
     };
+    get_currency_settings_api_v1_organization_currency_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrencySettingsOut"];
+                };
+            };
+        };
+    };
+    update_currency_settings_api_v1_organization_currency_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CurrencySettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrencySettingsUpdated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_api_v1_documents_upload_post: {
         parameters: {
             query?: never;
@@ -3436,6 +3758,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    active_jobs_api_v1_jobs_active_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveJobOut"][];
                 };
             };
         };
@@ -4232,6 +4574,8 @@ export interface operations {
             query?: {
                 finding_status?: components["schemas"]["FindingStatus"] | null;
                 records_only?: boolean;
+                /** @description Only the field findings of the record at this position */
+                record_position?: number | null;
                 limit?: number;
                 offset?: number;
             };
@@ -4250,6 +4594,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_FindingOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rerun_comparison_api_v1_comparisons__comparison_id__rerun_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comparison_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparisonAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_comparison_api_v1_comparisons__comparison_id__export_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comparison_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
                 };
             };
             /** @description Validation Error */

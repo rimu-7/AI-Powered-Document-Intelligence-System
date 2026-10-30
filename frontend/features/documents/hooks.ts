@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
+import { isTerminal } from "@/features/jobs/hooks"
 import { documentsApi, DocumentListParams } from "./api"
 import { qk } from "@/lib/api/keys"
 import { invalidateForMutation } from "@/lib/api/invalidation"
@@ -44,6 +50,7 @@ export function useDocumentPages(
     queryKey: qk.documents.pages(id, params),
     queryFn: () => documentsApi.pages(id, params),
     enabled: !!id,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -95,9 +102,7 @@ export function useDocumentJobs(id: string) {
       // Poll if any job is still running
       const jobs = query.state.data
       if (!jobs || jobs.length === 0) return false
-      const hasRunning = jobs.some(
-        (j) => !["COMPLETED", "FAILED", "CANCELLED"].includes(j.state)
-      )
+      const hasRunning = jobs.some((j) => !isTerminal(j.state))
       return hasRunning ? 3000 : false
     },
   })

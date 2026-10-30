@@ -1,5 +1,6 @@
 "use client"
 
+import { jobTypeLabel } from "@/lib/labels"
 import React, { use } from "react"
 import {
   useJob,
@@ -86,7 +87,7 @@ export default function JobDetailPage({
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-muted-foreground">
-            <span>Type: {job.job_type}</span>
+            <span>Type: {jobTypeLabel(job.job_type)}</span>
             <span>•</span>
             <span>
               Started: <DateTime value={job.started_at || job.created_at} />

@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 
 from app.api.deps import Principal, SessionDep, require
 from app.core.permissions import Permission
+from app.modules.documents.models import Document
 from app.modules.documents.service import get_document
+from app.modules.extraction.models import InvoiceRecord
 from app.modules.jobs import service
 from app.modules.jobs.models import ProcessingRun
-from app.modules.jobs.schemas import JobAccepted, JobDetail, JobOut
-from app.shared.enums import JobType, RunState
+from app.modules.jobs.schemas import ActiveJobOut, JobAccepted, JobDetail, JobOut
+from app.modules.reviews.models import ReviewTask
+from app.shared.enums import TERMINAL_RUN_STATES, JobType, ReviewTaskStatus, RunState
 from app.shared.pagination import Page, PageParams, page_params
 
 router = APIRouter(tags=["jobs"])
@@ -48,6 +52,67 @@ async def list_jobs(
     if job_type:
         stmt = stmt.where(ProcessingRun.job_type == job_type)
     return await _page(session, stmt, page)
+
+
+# Finished runs stay in the list this long, so the outcome is seen once.
+RECENTLY_FINISHED = timedelta(minutes=2)
+
+
+@router.get("/jobs/active", response_model=list[ActiveJobOut])
+async def active_jobs(principal: Reader, session: SessionDep) -> list[ActiveJobOut]:
+    """Documents being processed now, plus those that finished in the last two minutes."""
+    since = datetime.now(UTC) - RECENTLY_FINISHED
+    invoices = (
+        select(func.count())
+        .where(InvoiceRecord.document_id == ProcessingRun.document_id, InvoiceRecord.superseded_at.is_(None))
+        .correlate(ProcessingRun)
+        .scalar_subquery()
+    )
+    open_reviews = (
+        select(func.count())
+        .where(
+            ReviewTask.document_id == ProcessingRun.document_id,
+            ReviewTask.status.in_([ReviewTaskStatus.OPEN, ReviewTaskStatus.IN_PROGRESS]),
+        )
+        .correlate(ProcessingRun)
+        .scalar_subquery()
+    )
+    rows = (
+        await session.execute(
+            select(ProcessingRun, Document.original_filename, Document.file_kind, invoices, open_reviews)
+            .join(Document, and_(Document.id == ProcessingRun.document_id, Document.organization_id == ProcessingRun.organization_id))
+            .where(
+                ProcessingRun.organization_id == principal.organization_id,
+                ProcessingRun.job_type == JobType.DOCUMENT_PROCESSING,
+                Document.deleted_at.is_(None),
+                or_(
+                    ProcessingRun.state.not_in(list(TERMINAL_RUN_STATES)),
+                    ProcessingRun.completed_at >= since,
+                ),
+            )
+            .order_by(ProcessingRun.created_at.desc(), ProcessingRun.id.desc())
+            .limit(100)
+        )
+    ).all()
+    return [
+        ActiveJobOut(
+            job_id=run.id,
+            document_id=run.document_id,
+            filename=filename,
+            file_kind=file_kind,
+            state=run.state,
+            pages_total=run.pages_total,
+            pages_completed=run.pages_completed,
+            pages_failed=run.pages_failed,
+            progress_percent=run.progress_percent,
+            created_at=run.created_at,
+            completed_at=run.completed_at,
+            sanitized_error_message=run.sanitized_error_message,
+            invoices=n_invoices,
+            open_reviews=n_reviews,
+        )
+        for run, filename, file_kind, n_invoices, n_reviews in rows
+    ]
 
 
 @router.get("/jobs/{job_id}", response_model=JobDetail)

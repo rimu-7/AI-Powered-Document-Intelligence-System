@@ -1,5 +1,7 @@
 import { apiClient } from "@/lib/api/client"
+import type { Res } from "@/lib/api/typed"
 import type { components } from "@/lib/api/schema"
+import { fetchAllPages } from "@/lib/api/pages"
 
 export type DocumentOut = components["schemas"]["DocumentOut"]
 export type Page_DocumentOut_ = components["schemas"]["Page_DocumentOut_"]
@@ -30,12 +32,16 @@ export interface DocumentListParams {
 
 export const documentsApi = {
   async list(params?: DocumentListParams): Promise<Page_DocumentOut_> {
-    const res = await apiClient.get<Page_DocumentOut_>("/documents", { params })
+    const res = await apiClient.get<Res<"GET /documents">>("/documents", {
+      params,
+    })
     return res.data
   },
 
   async get(id: string): Promise<DocumentOut> {
-    const res = await apiClient.get<DocumentOut>(`/documents/${id}`)
+    const res = await apiClient.get<Res<"GET /documents/{document_id}">>(
+      `/documents/${id}`
+    )
     return res.data
   },
 
@@ -44,8 +50,10 @@ export const documentsApi = {
     mode?: "direct" | "presigned"
   ): Promise<Blob | { url: string }> {
     if (mode === "presigned") {
-      const res = await apiClient.get<{ url: string }>(
-        `/documents/${id}/download?mode=presigned`
+      // Not described in the schema: the endpoint also streams the raw file.
+      const res = await apiClient.get<{ url: string; expires_in: number }>(
+        `/documents/${id}/download`,
+        { params: { mode: "presigned" } }
       )
       return res.data
     }
@@ -59,9 +67,12 @@ export const documentsApi = {
     id: string,
     params?: { limit?: number; offset?: number }
   ): Promise<Page_PageOut_> {
-    const res = await apiClient.get<Page_PageOut_>(`/documents/${id}/pages`, {
-      params,
-    })
+    const res = await apiClient.get<Res<"GET /documents/{document_id}/pages">>(
+      `/documents/${id}/pages`,
+      {
+        params,
+      }
+    )
     return res.data
   },
 
@@ -73,9 +84,12 @@ export const documentsApi = {
   },
 
   async text(id: string, page_from = 1, page_to?: number): Promise<PageText[]> {
-    const res = await apiClient.get<PageText[]>(`/documents/${id}/text`, {
-      params: { page_from, ...(page_to ? { page_to } : {}) },
-    })
+    const res = await apiClient.get<Res<"GET /documents/{document_id}/text">>(
+      `/documents/${id}/text`,
+      {
+        params: { page_from, ...(page_to ? { page_to } : {}) },
+      }
+    )
     return res.data
   },
 
@@ -83,9 +97,12 @@ export const documentsApi = {
     id: string,
     params?: { limit?: number; offset?: number }
   ): Promise<Page_TableOut_> {
-    const res = await apiClient.get<Page_TableOut_>(`/documents/${id}/tables`, {
-      params,
-    })
+    const res = await apiClient.get<Res<"GET /documents/{document_id}/tables">>(
+      `/documents/${id}/tables`,
+      {
+        params,
+      }
+    )
     return res.data
   },
 
@@ -94,30 +111,38 @@ export const documentsApi = {
     tableId: string,
     params?: { limit?: number; offset?: number }
   ): Promise<Page_RowOut_> {
-    const res = await apiClient.get<Page_RowOut_>(
-      `/documents/${docId}/tables/${tableId}/rows`,
-      { params }
-    )
+    const res = await apiClient.get<
+      Res<"GET /documents/{document_id}/tables/{table_id}/rows">
+    >(`/documents/${docId}/tables/${tableId}/rows`, { params })
     return res.data
   },
 
   async mappingSuggestions(id: string): Promise<MappingSuggestions[]> {
-    const res = await apiClient.get<MappingSuggestions[]>(
-      `/documents/${id}/spreadsheet/mapping-suggestions`
-    )
+    const res = await apiClient.get<
+      Res<"GET /documents/{document_id}/spreadsheet/mapping-suggestions">
+    >(`/documents/${id}/spreadsheet/mapping-suggestions`)
     return res.data
   },
 
+  /** Every processing run of this document, newest first. */
   async jobs(id: string): Promise<JobOut[]> {
-    const res = await apiClient.get<JobOut[]>(`/documents/${id}/jobs`)
-    return res.data
+    const jobs = await fetchAllPages(async (offset, limit) => {
+      const res = await apiClient.get<Res<"GET /documents/{document_id}/jobs">>(
+        `/documents/${id}/jobs`,
+        { params: { offset, limit } }
+      )
+      return res.data
+    })
+    return jobs.sort((a, b) => b.created_at.localeCompare(a.created_at))
   },
 
   async invoices(
     id: string,
     include_superseded = false
   ): Promise<InvoiceOut[]> {
-    const res = await apiClient.get<InvoiceOut[]>(`/documents/${id}/invoices`, {
+    const res = await apiClient.get<
+      Res<"GET /documents/{document_id}/invoices">
+    >(`/documents/${id}/invoices`, {
       params: { include_superseded },
     })
     return res.data
@@ -127,21 +152,22 @@ export const documentsApi = {
     id: string,
     params?: { severity?: string; limit?: number; offset?: number }
   ): Promise<Page_ValidationIssueOut_> {
-    const res = await apiClient.get<Page_ValidationIssueOut_>(
-      `/documents/${id}/validations`,
-      { params }
-    )
+    const res = await apiClient.get<
+      Res<"GET /documents/{document_id}/validations">
+    >(`/documents/${id}/validations`, { params })
     return res.data
   },
 
   async reprocess(id: string): Promise<{ job_id: string; status_url: string }> {
-    const res = await apiClient.post<{ job_id: string; status_url: string }>(
-      `/documents/${id}/reprocess`
-    )
+    const res = await apiClient.post<
+      Res<"POST /documents/{document_id}/reprocess">
+    >(`/documents/${id}/reprocess`)
     return res.data
   },
 
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/documents/${id}`)
+    await apiClient.delete<Res<"DELETE /documents/{document_id}">>(
+      `/documents/${id}`
+    )
   },
 }

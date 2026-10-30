@@ -110,6 +110,7 @@ def cross_check(primary: NormalizedInvoice, secondary: NormalizedInvoice) -> Nor
             merged.evidence[name] = secondary.evidence[name]
             if name == "currency":
                 merged.currency_raw = secondary.currency_raw
+                merged.currency_source = secondary.currency_source
             if name == "invoice_date":
                 merged.invoice_date_raw = secondary.invoice_date_raw
             taken.append(name)

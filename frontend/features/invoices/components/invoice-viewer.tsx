@@ -26,37 +26,72 @@ export interface EvidenceBox {
 
 interface InvoiceViewerProps {
   documentId: string
-  pageStart?: number | null
+  /** The page to show (controlled by the parent so other panels can follow it). */
+  page: number
+  onPageChange: (page: number) => void
   activeEvidence?: EvidenceBox | null
+  /** Shown in the toolbar, e.g. which invoice the current page belongs to. */
+  pageLabel?: React.ReactNode
+}
+
+// The pages endpoint returns at most 200 rows per request.
+const PAGE_CHUNK = 200
+const ZOOM_KEY = "docintel.viewer.zoom"
+
+function readZoom(): number {
+  try {
+    const v = Number(window.sessionStorage.getItem(ZOOM_KEY))
+    return v >= 50 && v <= 250 ? v : 100
+  } catch {
+    return 100
+  }
 }
 
 export function InvoiceViewer({
   documentId,
-  pageStart = 1,
+  page,
+  onPageChange,
   activeEvidence,
+  pageLabel,
 }: InvoiceViewerProps) {
+  // Metadata (size) of the current page; the total comes with any chunk.
+  const chunkOffset =
+    Math.floor((Math.max(page, 1) - 1) / PAGE_CHUNK) * PAGE_CHUNK
   const { data: pagesData, isLoading } = useDocumentPages(documentId, {
-    limit: 100,
+    limit: PAGE_CHUNK,
+    offset: chunkOffset,
   })
   const pages = pagesData?.items ?? []
+  const totalPages = pagesData?.total || 1
 
-  const [userPage, setUserPage] = useState<number | null>(null)
-  const [prevEvidence, setPrevEvidence] = useState<
-    EvidenceBox | null | undefined
-  >(activeEvidence)
-  const [zoom, setZoom] = useState<number>(100)
+  const [zoom, setZoomState] = useState<number>(readZoom)
+  const setZoom = (updater: (z: number) => number) =>
+    setZoomState((z) => {
+      const next = updater(z)
+      try {
+        window.sessionStorage.setItem(ZOOM_KEY, String(next))
+      } catch {
+        // storage unavailable: zoom just isn't remembered
+      }
+      return next
+    })
   const [imgRetryCount, setImgRetryCount] = useState<number>(0)
   const imgRef = useRef<HTMLImageElement>(null)
+  const thumbsRef = useRef<HTMLDivElement>(null)
 
-  if (activeEvidence !== prevEvidence) {
-    setPrevEvidence(activeEvidence)
-    if (activeEvidence?.page_number) {
-      setUserPage(activeEvidence.page_number)
-    }
+  const currentPage = Math.min(Math.max(page, 1), totalPages)
+  const goTo = (n: number) => {
+    const next = Math.min(Math.max(n, 1), totalPages)
+    if (next !== currentPage) onPageChange(next)
   }
 
-  const currentPage =
-    userPage ?? (activeEvidence?.page_number || pageStart || 1)
+  // Keep the selected thumbnail visible when the page changes from elsewhere.
+  useEffect(() => {
+    const el = thumbsRef.current?.querySelector<HTMLElement>(
+      `[data-page="${currentPage}"]`
+    )
+    el?.scrollIntoView({ block: "nearest", inline: "center" })
+  }, [currentPage])
 
   const currentKey = `${documentId}:${currentPage}:${imgRetryCount}`
   const [loadedKey, setLoadedKey] = useState<string | null>(null)
@@ -79,14 +114,6 @@ export function InvoiceViewer({
     return () => clearTimeout(timeout)
   }, [errorKey, currentKey, imgRetryCount])
 
-  const setCurrentPage = (updater: number | ((p: number) => number)) => {
-    setUserPage((prev) => {
-      const cur = prev ?? (activeEvidence?.page_number || pageStart || 1)
-      return typeof updater === "function" ? updater(cur) : updater
-    })
-  }
-
-  const totalPages = pages.length || 1
   const currentPageMeta = pages.find((p) => p.page_number === currentPage)
   const pageWidth = currentPageMeta?.page_width || 612
   const pageHeight = currentPageMeta?.page_height || 792
@@ -145,7 +172,8 @@ export function InvoiceViewer({
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onClick={() => goTo(currentPage - 1)}
+            aria-label="Previous page"
             disabled={currentPage <= 1}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -157,17 +185,24 @@ export function InvoiceViewer({
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => goTo(currentPage + 1)}
+            aria-label="Next page"
             disabled={currentPage >= totalPages}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
-        {activeEvidence?.sheet && (
+        {activeEvidence?.sheet ? (
           <div className="max-w-[200px] truncate rounded bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
             {activeEvidence.sheet} | R{activeEvidence.row}
           </div>
+        ) : (
+          pageLabel && (
+            <div className="flex min-w-0 items-center text-[11px]">
+              {pageLabel}
+            </div>
+          )
         )}
 
         <div className="flex items-center gap-0.5 sm:gap-1">
@@ -181,7 +216,7 @@ export function InvoiceViewer({
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>
           <button
-            onClick={() => setZoom(100)}
+            onClick={() => setZoom(() => 100)}
             className="w-9 rounded py-0.5 text-center font-mono text-[11px] transition-colors hover:bg-muted sm:w-10"
             title="Reset to 100%"
           >
@@ -201,7 +236,7 @@ export function InvoiceViewer({
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => setZoom(100)}
+              onClick={() => setZoom(() => 100)}
               title="Reset zoom"
             >
               <RotateCcw className="h-3 w-3" />
@@ -283,20 +318,21 @@ export function InvoiceViewer({
       </div>
 
       {/* Page Thumbnails Strip */}
-      {pages.length > 1 && (
-        <div className="flex h-16 shrink-0 items-center gap-2 overflow-x-auto border-t bg-muted/20 p-2 sm:h-20 sm:p-2.5">
-          {pages.map((p) => {
-            const thumbUrl = documentsApi.getPageImageUrl(
-              documentId,
-              p.page_number,
-              240
-            )
-            const isSelected = p.page_number === currentPage
+      {totalPages > 1 && (
+        <div
+          ref={thumbsRef}
+          className="flex h-16 shrink-0 items-center gap-2 overflow-x-auto border-t bg-muted/20 p-2 sm:h-20 sm:p-2.5"
+        >
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => {
+            const isSelected = n === currentPage
             return (
               <button
-                key={p.id}
+                key={n}
                 type="button"
-                onClick={() => setCurrentPage(p.page_number)}
+                data-page={n}
+                onClick={() => goTo(n)}
+                aria-label={`Page ${n}`}
+                aria-current={isSelected ? "page" : undefined}
                 className={`relative flex aspect-[3/4] h-12 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/40 transition-all focus:outline-none sm:h-14 ${
                   isSelected
                     ? "border-primary shadow-xs ring-2 ring-primary"
@@ -305,7 +341,7 @@ export function InvoiceViewer({
               >
                 <FileText className="pointer-events-none absolute h-4 w-4 text-muted-foreground/40" />
                 <img
-                  src={thumbUrl}
+                  src={documentsApi.getPageImageUrl(documentId, n, 240)}
                   alt=""
                   className="relative z-10 h-full w-full object-cover"
                   loading="lazy"
@@ -314,7 +350,7 @@ export function InvoiceViewer({
                   }}
                 />
                 <span className="py-0.2 absolute right-0.5 bottom-0.5 z-20 rounded bg-background/90 px-1 font-mono text-[9px] font-semibold text-foreground shadow-xs backdrop-blur-xs">
-                  {p.page_number}
+                  {n}
                 </span>
               </button>
             )

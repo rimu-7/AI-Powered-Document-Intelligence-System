@@ -15,6 +15,7 @@ import {
   History,
   Activity,
   Layers,
+  Coins,
 } from "lucide-react"
 
 import {
@@ -85,6 +86,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/admin/users",
       icon: Users,
       isActive: pathname.startsWith("/admin/users"),
+    },
+    {
+      title: "Currency Rules",
+      url: "/admin/currency",
+      icon: Coins,
+      isActive: pathname.startsWith("/admin/currency"),
     },
     {
       title: "Failed Jobs (DLQ)",

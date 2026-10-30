@@ -43,14 +43,15 @@ default in production: `API_DOCS_ENABLED`). Every response carries
 | Auth | `POST /auth/register` (only when `REGISTRATION_MODE=open`; creates org + ADMIN) · `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout[?all_sessions=true]` · `GET /auth/me` |
 | Users | `GET /users` · `POST /users` · `PATCH /users/{id}` (role / active) · `POST /users/{id}/revoke-sessions` |
 | Documents | `POST /documents/upload` (multipart) · `POST /documents/upload/raw?filename=` (raw body) · `POST /documents/direct-uploads` → `PUT upload_url` (UploadThing) → `POST /documents/direct-uploads/{id}/complete` · `GET /documents` (filters: status, document_type, file_kind, filename, created range) · `GET /documents/{id}` · `GET /documents/{id}/download[?mode=presigned]` · `GET /documents/{id}/pages` (incl. `page_width`/`page_height`) · `GET /documents/{id}/pages/{n}/image[?width=]` (WebP, widths rounded up to 240/640/1024/1600, cached, ETag) · `GET /documents/{id}/text?page_from&page_to` · `GET /documents/{id}/tables` · `GET /documents/{id}/tables/{table_id}/rows` · `GET /documents/{id}/spreadsheet/mapping-suggestions` · `DELETE /documents/{id}` · `POST /documents/{id}/reprocess` |
-| Jobs | `GET /jobs` · `GET /jobs/{id}` (stage history, tasks by state, failed tasks with error history) · `GET /documents/{id}/jobs` · `POST /jobs/{id}/retry` · `POST /jobs/{id}/cancel` |
+| Jobs | `GET /jobs` · `GET /jobs/active` (documents being processed, plus those finished in the last 2 minutes, with filename, stage, page progress, invoices found and open reviews) · `GET /jobs/{id}` (stage history, tasks by state, failed tasks with error history) · `GET /documents/{id}/jobs` · `POST /jobs/{id}/retry` · `POST /jobs/{id}/cancel` |
 | Extraction | `GET /documents/{id}/extractions` · `GET /extractions/{id}` · `GET /documents/{id}/invoices[?include_superseded=true]` · `GET /invoices/{id}` (incl. `machine_values`, evidence, alternatives) · `GET /invoices/{id}/line-items` · `GET /invoices/{id}/history` |
 | Validation | `GET /documents/{id}/validations` · `GET /invoices/{id}/validations` · `POST /invoices/{id}/revalidate` |
 | Review | `GET /reviews/queue` (status, assigned_to_me, unassigned) · `GET /reviews/{id}` · `POST /reviews/{id}/claim[?force=true]` · `PATCH /invoices/{id}/corrections` · `POST /invoices/{id}/approve` · `POST /invoices/{id}/reject` |
-| Comparison | `POST /comparisons` · `GET /comparisons` · `GET /comparisons/{id}` · `GET /comparisons/{id}/findings` |
+| Comparison | `POST /comparisons` · `GET /comparisons` · `GET /comparisons/{id}` · `GET /comparisons/{id}/findings[?records_only=true&finding_status=…&record_position=…]` · `POST /comparisons/{id}/rerun` · `GET /comparisons/{id}/export.csv` (both endpoints serve comparisons and reconciliations) |
 | Reconciliation | `POST /reconciliations` · `GET /reconciliations/{id}` · `GET /reconciliations/{id}/findings[?records_only=true&finding_status=…]` · `GET /reconciliations/{id}/export.csv` |
 | Search | `GET /search/keyword` · `POST /search/semantic` · `POST /search/hybrid` |
 | Admin | `GET /admin/stats` · `GET /admin/dead-letter` · `GET /admin/audit-events` |
+| Organization | `GET /organization/currency-settings` (default currency, symbol rules, learned symbols, invoices waiting for a currency) · `PUT /organization/currency-settings` (ADMIN; `apply_to_pending` resolves and revalidates waiting invoices) |
 | Config | `GET /config/public` (no auth: upload limits, allowed extensions, registration mode, direct upload availability, `currencies` as `{code, minor_units}`) |
 | Ops (no prefix) | `GET /health/live` · `GET /health/ready` · `GET /health/startup` · `GET /metrics` (bearer `METRICS_TOKEN` when set) |
 
@@ -96,9 +97,29 @@ Without `column_mapping`, suggested mappings are used. If required fields
 (`invoice_number`, `total_amount`) cannot be mapped → `422
 INVALID_COLUMN_MAPPING`, with suggestions in `details`. Reconciliation summary:
 `matched_count`, `mismatched_count`, `missing_in_pdf_count`,
-`missing_in_spreadsheet_count`, `ambiguous_count`, `duplicate_count`. Findings
+`missing_in_spreadsheet_count`, `ambiguous_count`, `duplicate_count`; both
+kinds also report `missing_left_count` / `missing_right_count`. Findings
 are `__record__` rows (one per record) plus per-field rows, each with evidence
-from both sides.
+from both sides. A record's `difference_json` names the fields that differ
+(`mismatched_fields`, `uncertain_fields`, `not_comparable_fields`,
+`missing_lines`) and how it was paired (`match_quality`: `exact`,
+`fuzzy:<score>` for similar supplier names, or `no_invoice_number`).
+`?record_position=<position of a __record__ row>` returns that record's field
+rows.
+
+Matching: records are paired by normalized invoice number and a compatible
+supplier. When the number is missing on one side, a record is paired only if
+supplier, date and total are all present and equal and exactly one candidate
+fits; that pair is reported as `AMBIGUOUS` for a person to confirm, never as
+`MATCH`.
+
+`GET /comparisons/{id}` includes `documents` (file names and sides) and, when
+`FAILED`, `error_message`. Reprocessing a document or correcting one of its
+invoices marks finished comparisons over it `STALE` with a `stale_reason`.
+`POST /comparisons/{id}/rerun` runs the same documents and settings on the
+current data as a new comparison (`202`, same body as `POST /comparisons`);
+the earlier run is kept. If a PDF↔PDF comparison was limited to selected
+invoices and those were replaced by reprocessing → `409 SELECTION_OUTDATED`.
 
 ## Search
 
@@ -114,7 +135,25 @@ from both sides.
   `processing_statuses`, `validation_outcomes`. Empty query → `422 EMPTY_QUERY`.
   `currency` must be a `CurrencyCode` (e.g. `USD`); anything else → 422.
 * Invoice `currency` is `CurrencyCode | null`; `currency_raw` is the text as
-  printed (`"$"`). `null` means "not confirmed", never a default currency.
+  printed (`"$"`). `currency_source` says how it was decided (`PRINTED`,
+  `DOCUMENT_CONTEXT`, `SUPPLIER_HISTORY`, `ORGANIZATION_RULE`, `LEARNED`,
+  `ORGANIZATION_DEFAULT`, `HUMAN`) and `currency_reason` why, for automatic
+  decisions. `null` means "not confirmed yet"; `currency_suggestions` then lists
+  the likely codes, most likely first.
+
+## Currency rules
+
+```json
+PUT /api/v1/organization/currency-settings
+{"default_currency": null, "symbol_rules": {"$": "USD"}, "apply_to_pending": true}
+→ 200 {"default_currency": null, "symbol_rules": {"$": "USD"},
+       "symbols": [{"symbol": "$", "candidates": ["USD", "CAD", "…"], "rule": "USD",
+                    "learned": null, "learned_from": 0}, …],
+       "learn_threshold": 2, "pending_invoices": 0, "resolved_invoices": 3}
+```
+
+A rule must pick one of the symbol's own currencies (`{"$": "EUR"}` →
+`422 INVALID_CURRENCY_RULE`). Every change is written to the audit log.
 
 ## curl walkthrough
 

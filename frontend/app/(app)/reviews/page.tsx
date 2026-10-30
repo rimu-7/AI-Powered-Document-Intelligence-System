@@ -3,6 +3,7 @@
 import React, { Suspense } from "react"
 import { useQueryState, parseAsString, parseAsInteger } from "nuqs"
 import { PageHeader } from "@/components/page-header"
+import { ProcessingPanel } from "@/features/jobs/components/processing-panel"
 import { useReviewQueue, useClaimReview } from "@/features/reviews/hooks"
 import { useCurrentUser } from "@/features/auth/hooks"
 import { hasPermission } from "@/lib/permissions"
@@ -35,6 +36,12 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+
+const QUEUE_FILTERS: Record<string, string> = {
+  all: "All Open Tasks",
+  mine: "Assigned to Me",
+  unassigned: "Unassigned Tasks",
+}
 
 function ReviewsContent() {
   const router = useRouter()
@@ -102,6 +109,8 @@ function ReviewsContent() {
         )}
       </PageHeader>
 
+      <ProcessingPanel />
+
       {/* Filter tabs */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex w-full items-center gap-2 sm:w-auto">
@@ -113,7 +122,9 @@ function ReviewsContent() {
             }}
           >
             <SelectTrigger className="h-9 w-full text-xs sm:w-[180px]">
-              <SelectValue placeholder="Queue Filter" />
+              <SelectValue placeholder="Queue Filter">
+                {(v: string) => QUEUE_FILTERS[v] ?? "All Open Tasks"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Open Tasks</SelectItem>

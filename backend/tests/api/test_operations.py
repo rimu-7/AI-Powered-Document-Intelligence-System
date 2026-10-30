@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -164,3 +165,23 @@ async def test_database_rejects_currency_outside_the_enum(client: Any, org: dict
         with pytest.raises(IntegrityError, match="ck_invoice_records_currencycode"):
             s.execute(text("UPDATE invoice_records SET currency = 'ZZZ' WHERE id = :id"), {"id": invoice_id})
         s.rollback()
+
+
+async def test_active_jobs_show_processing_then_the_outcome(client: Any, pipeline: Any) -> None:
+    org = await register_org(client)
+    h = org["headers"]
+    spec = random_invoice(random.Random(61), 601, total_override=Decimal("1.00"))  # forces a review
+    r = await upload(client, h, [("in-flight.pdf", invoice_pdf_bytes([spec]), "application/pdf")])
+    doc_id = r.json()["results"][0]["document_id"]
+
+    (active,) = (await client.get("/api/v1/jobs/active", headers=h)).json()
+    assert active["document_id"] == doc_id and active["filename"] == "in-flight.pdf"
+    assert active["state"] == "QUEUED" and active["completed_at"] is None and active["invoices"] == 0
+
+    pipeline()
+    (done,) = (await client.get("/api/v1/jobs/active", headers=h)).json()
+    assert done["state"] == "REQUIRES_REVIEW" and done["completed_at"] is not None
+    assert done["invoices"] == 1 and done["open_reviews"] == 1
+
+    other = await register_org(client)
+    assert (await client.get("/api/v1/jobs/active", headers=other["headers"])).json() == []

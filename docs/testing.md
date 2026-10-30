@@ -7,13 +7,25 @@ Run on 2026-10-30 against the combined repository. Raw reports in
 
 | Run | Command | Result |
 |---|---|---|
-| Backend, host (PostgreSQL, Redis, MinIO via Testcontainers) | `make test-backend` | **220 passed, 1 skipped** (the OCR test needs the Tesseract binary on the host); line coverage **88%** |
-| Backend, inside the Docker image (Tesseract installed) | `make test-docker` | **221 passed, 0 failed, 0 skipped** (26.5 s) |
-| Frontend unit + component (Vitest, MSW) | `make test-frontend` | **50 passed** in 15 files; same result inside the frontend test image |
+| Backend, host (PostgreSQL, Redis, MinIO via Testcontainers) | `make test-backend` | **260 passed, 1 skipped** (the OCR test needs the Tesseract binary on the host); line coverage **88%** |
+| Backend, inside the Docker image (Tesseract installed) | `make test-docker` | **261 passed, 0 failed, 0 skipped** |
+| Frontend unit + component (Vitest, MSW) | `make test-frontend` | **64 passed** in 18 files; same result inside the frontend test image |
 | Frontend end-to-end + accessibility (Playwright, axe) against the running system | `make test-e2e` | **9 passed**: sign-in through the BFF, app shell and command palette, URL-synced search, comparison wizard, auth redirects and validation, WCAG 2.1 AA on login and register |
-| API smoke test against the running system | `make smoke` | **17/17 checks passed** (37 s) |
+| API smoke test against the running system | `make smoke` | **17/17 checks passed** (24 s) |
 | API contract (frontend types vs backend OpenAPI) | `make api-types` + `git diff` | no drift |
-| Lint and types | `make lint` | ruff, ruff format, `mypy app` (115 files), ESLint, Prettier, TypeScript: all clean |
+| Lint and types | `make lint` | ruff, ruff format, `mypy app` (117 files), ESLint, Prettier, TypeScript: all clean |
+
+Every frontend API call takes its response type from the backend's OpenAPI
+schema (`Res<"GET /route">` in `frontend/lib/api/typed.ts`), so a call that
+assumes the wrong shape no longer compiles. Introducing this found five
+mismatches the tests had not caught, because the test mocks made the same
+assumption as the code: a document's jobs and an invoice's issues are pages,
+not lists (the first crashed the document page with `t.some is not a
+function`); invoice history returns review actions, not audit events (the
+History tab showed empty rows); approve/reject return the invoice without
+line items. All are fixed; the mocks now return the real shapes and
+`tests/components/comparison-results.test.tsx` covers the document page's
+jobs tab, the history tab and the comparison results page.
 
 The end-to-end run found a crash that no unit test covered (the command
 palette opened outside its `<Command>` root and took the page down); it is
@@ -38,17 +50,18 @@ behaviour itself is covered by the evaluation run ([evaluation.md](evaluation.md
 | Validation | `unit/test_validation_rules.py` (incl. Hypothesis property tests) | every rule with exact expected/actual values; tolerance; credit notes; tax only from printed rates; duplicates; property tests: consistent invoices never flagged, any total error above tolerance always flagged |
 | API endpoints | `api/test_auth.py`, `api/test_document_workflows.py`, `api/test_operations.py`, `api/test_uploadthing_storage.py` | auth and token rotation, roles, upload (multipart, raw body, direct-to-UploadThing), status, results, search (keyword, semantic, hybrid, filters, empty query), corrections with optimistic locking, approval rules, comparison, reconciliation, CSV export, idempotency keys, rate limits, health, metrics |
 | Failure scenarios | `workers/test_reliability.py` | duplicate delivery, worker crash mid-batch, lost queue messages, broker outage, transient error retry, retries exhausted → dead letter → replay, malformed/encrypted PDF, one corrupt page in a long PDF, cancellation, SQL-error classification, many review tasks in one document (prepared-statement regression), storage outage |
+| Currency resolution | `unit/test_currency_resolution.py`, `api/test_currency_policy.py` | supplier address, phone/domain/tax-ID signals and conflicts, whole-word country names, supplier history, rules, learning threshold, default never overriding a printed symbol, one-click ranking; end to end: waiting invoices resolved by a new rule and revalidated, new uploads resolved during extraction, admin-only changes, audit entry |
 | Security | `security/test_tenant_isolation.py`, `unit/test_security_and_misc.py` | every resource returns 404 across tenants, including all search modes; DB-level composite FK; JWT tampering and `alg=none`; Argon2; log redaction |
 | Database | `integration/test_migrations.py` | migrations match models, upgrade/downgrade round trip, HNSW/GIN/partial indexes, `NUMERIC` money, append-only audit log |
 
-Backend tests per area (Docker run, 221): unit 172 (money/dates/text 33,
-two-column layouts 25, extraction 23, currency enum 17, validation 16,
+Backend tests per area (Docker run, 258): unit 204 (money/dates/text 33,
+currency resolution 31, two-column layouts 26, extraction 23, currency enum 17, validation 16,
 spreadsheets+matching 10, hosted LLM adapter 9, state machine 9,
 fingerprinting 7, security 7, UploadThing client 6, preprocessing 5, process
-entry points 5) · API 31 · workers/reliability 13 · security 3 · migrations 2.
+entry points 5) · API 36 · workers/reliability 13 · security 3 · migrations 2.
 
-Frontend tests (50 unit/component, 9 end-to-end): money and currency
-formatting, currency select, invoice review workspace (edit form, currency
+Frontend tests (60 unit/component, 9 end-to-end): viewer/invoice-panel page sync, invoice stepping, edits never lost when switching, live processing panel, money and currency
+formatting, currency select, one-click currency confirmation and rules, currency source badges, invoice review workspace (edit form, currency
 candidates, approval with blocking issues), upload sheet, status badges, empty/error states, dropdown and
 command palette composition, query keys and invalidation, cross-tab refresh
 lock, API error normalisation, CSRF origin check, search snippets.

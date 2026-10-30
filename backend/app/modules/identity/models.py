@@ -7,8 +7,8 @@ from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, String,
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base, CreatedAt, Timestamps, UUIDPrimaryKey
-from app.core.db_types import enum_type
-from app.shared.enums import OrganizationStatus, Role
+from app.core.db_types import JSON, enum_type, json_default
+from app.shared.enums import CurrencyCode, OrganizationStatus, Role
 
 
 class Organization(UUIDPrimaryKey, Timestamps, Base):
@@ -18,6 +18,9 @@ class Organization(UUIDPrimaryKey, Timestamps, Base):
     slug: Mapped[str] = mapped_column(String(80), unique=True)
     status: Mapped[OrganizationStatus] = mapped_column(enum_type(OrganizationStatus), default=OrganizationStatus.ACTIVE)
     storage_quota_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # Currency policy for invoices whose currency is not printed unambiguously.
+    default_currency: Mapped[CurrencyCode | None] = mapped_column(enum_type(CurrencyCode, length=3), nullable=True)
+    currency_symbol_rules: Mapped[dict[str, str]] = mapped_column(JSON, default=json_default)
 
 
 class User(UUIDPrimaryKey, Timestamps, Base):

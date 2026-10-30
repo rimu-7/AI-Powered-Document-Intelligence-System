@@ -9,7 +9,10 @@ Matching rules:
    not leave exactly one, the result is AMBIGUOUS.
 4. Optional fuzzy invoice-number matching (OCR errors) only ever yields
    AMBIGUOUS, never an authoritative match.
-5. Amounts in different currencies are NOT_COMPARABLE.
+5. A record with no invoice number on one side is paired only when supplier,
+   date and total are all present and equal and exactly one candidate fits;
+   the pair is AMBIGUOUS (needs confirmation), never an authoritative match.
+6. Amounts in different currencies are NOT_COMPARABLE.
 """
 
 from __future__ import annotations
@@ -129,12 +132,15 @@ def compare_pair(
         findings.append(FindingDraft(key, name, status, _val(lv), _val(rv), diff, _evidence(left, right, name)))
 
     # Identity fields
-    add(
-        "invoice_number",
-        FindingStatus.MATCH if left.normalized_number == right.normalized_number else FindingStatus.AMBIGUOUS,
-        left.invoice_number,
-        right.invoice_number,
-    )
+    if not left.normalized_number or not right.normalized_number:
+        add("invoice_number", FindingStatus.NOT_COMPARABLE, left.invoice_number, right.invoice_number, {"reason": "missing on one side"})
+    else:
+        add(
+            "invoice_number",
+            FindingStatus.MATCH if left.normalized_number == right.normalized_number else FindingStatus.AMBIGUOUS,
+            left.invoice_number,
+            right.invoice_number,
+        )
     ok, quality = _supplier_compat(left, right, opts.supplier_fuzzy_threshold)
     if quality == "unknown":
         add("supplier_name", FindingStatus.NOT_COMPARABLE, left.supplier, right.supplier)
@@ -209,6 +215,10 @@ def compare_pair(
         record_status = FindingStatus.AMBIGUOUS
     else:
         record_status = FindingStatus.MATCH
+
+    def fields_with(status: FindingStatus) -> list[str]:
+        return [f.field_name for f in findings if f.status == status]
+
     findings.insert(
         0,
         FindingDraft(
@@ -217,7 +227,13 @@ def compare_pair(
             record_status,
             left.label(),
             right.label(),
-            {"match_quality": match_quality},
+            {
+                "match_quality": match_quality,
+                "mismatched_fields": fields_with(FindingStatus.MISMATCH),
+                "uncertain_fields": fields_with(FindingStatus.AMBIGUOUS),
+                "not_comparable_fields": fields_with(FindingStatus.NOT_COMPARABLE),
+                "missing_lines": [f.field_name for f in findings if f.status in (FindingStatus.MISSING_LEFT, FindingStatus.MISSING_RIGHT)],
+            },
             _evidence(left, right),
         ),
     )
@@ -282,6 +298,18 @@ def _compare_lines(left: ComparableRecord, right: ComparableRecord, key: str, op
     return out
 
 
+def _same_invoice_without_number(a: ComparableRecord, b: ComparableRecord, threshold: int) -> bool:
+    """Supplier, date and total all present and equal: the only safe basis when a number is missing."""
+    if not (a.normalized_supplier and b.normalized_supplier and a.invoice_date and b.invoice_date):
+        return False
+    if a.total_amount is None or b.total_amount is None or a.total_amount != b.total_amount:
+        return False
+    if a.invoice_date != b.invoice_date:
+        return False
+    ok, quality = _supplier_compat(a, b, threshold)
+    return ok and quality != "unknown"
+
+
 def match_records(
     left: list[ComparableRecord],
     right: list[ComparableRecord],
@@ -300,6 +328,8 @@ def match_records(
             by_number[rec.normalized_number].append(rec)
 
     # Duplicates inside the right-hand set (e.g. register rows across sheets).
+    # Listed after the matching results.
+    duplicate_findings: list[FindingDraft] = []
     duplicate_ids: set[str] = set()
     if detect_right_duplicates:
         for recs in by_number.values():
@@ -311,7 +341,7 @@ def match_records(
                     for extra in group[1:]:
                         duplicate_ids.add(extra.record_id)
                         counts["duplicate_count"] += 1
-                        findings.append(
+                        duplicate_findings.append(
                             FindingDraft(
                                 f"duplicate | {extra.invoice_number} | {extra.supplier or '?'}",
                                 "__record__",
@@ -362,19 +392,10 @@ def match_records(
                     )
                 )
                 continue
-        elif candidates:
+        other_suppliers: list[ComparableRecord] = []
+        if not compatible and candidates:
             # Same number, incompatible supplier: explicitly not a match.
-            findings.append(
-                FindingDraft(
-                    key,
-                    "supplier_name",
-                    FindingStatus.NOT_COMPARABLE,
-                    lrec.supplier,
-                    [c.supplier for c in candidates],
-                    {"reason": "same invoice number belongs to a different supplier"},
-                    {"left": lrec.reference, "right_candidates": [c.reference for c in candidates]},
-                )
-            )
+            other_suppliers = candidates
         if chosen is None and opts.fuzzy_invoice_numbers and lrec.normalized_number:
             fuzzy = [
                 r
@@ -404,10 +425,53 @@ def match_records(
                 )
                 continue
         if chosen is None:
+            # A number printed on only one side: pair on supplier + date + total.
+            unnumbered = [
+                r
+                for r in right
+                if r.record_id not in used
+                and r.record_id not in duplicate_ids
+                and (not r.normalized_number or not lrec.normalized_number)
+                and _same_invoice_without_number(lrec, r, opts.supplier_fuzzy_threshold)
+            ]
+            if len(unnumbered) == 1:
+                chosen = unnumbered[0]
+                quality_for_pair = "no_invoice_number"
+            elif len(unnumbered) > 1:
+                counts["ambiguous_count"] += 1
+                findings.append(
+                    FindingDraft(
+                        key,
+                        "__record__",
+                        FindingStatus.AMBIGUOUS,
+                        lrec.label(),
+                        [r.label() for r in unnumbered],
+                        {"reason": "no invoice number; several records share supplier, date and total"},
+                        {"left": lrec.reference, "right_candidates": [r.reference for r in unnumbered]},
+                    )
+                )
+                continue
+        if chosen is None:
             counts["missing_right_count"] += 1
-            findings.append(
-                FindingDraft(key, "__record__", FindingStatus.MISSING_RIGHT, lrec.label(), None, None, {"left": lrec.reference})
-            )
+            if other_suppliers:
+                findings.append(
+                    FindingDraft(
+                        key,
+                        "__record__",
+                        FindingStatus.MISSING_RIGHT,
+                        lrec.label(),
+                        None,
+                        {
+                            "reason": "same invoice number belongs to a different supplier",
+                            "suppliers": [c.supplier for c in other_suppliers],
+                        },
+                        {"left": lrec.reference, "right_candidates": [c.reference for c in other_suppliers]},
+                    )
+                )
+            else:
+                findings.append(
+                    FindingDraft(key, "__record__", FindingStatus.MISSING_RIGHT, lrec.label(), None, None, {"left": lrec.reference})
+                )
             continue
         used.add(chosen.record_id)
         pair = compare_pair(lrec, chosen, key, opts, quality_for_pair, compare_customer, compare_lines)
@@ -424,6 +488,7 @@ def match_records(
         key = f"{rrec.invoice_number or rrec.record_id} | {rrec.supplier or '?'}"
         findings.append(FindingDraft(key, "__record__", FindingStatus.MISSING_LEFT, None, rrec.label(), None, {"right": rrec.reference}))
 
+    findings.extend(duplicate_findings)
     summary = {
         "matched_count": counts["matched_count"],
         "mismatched_count": counts["mismatched_count"],

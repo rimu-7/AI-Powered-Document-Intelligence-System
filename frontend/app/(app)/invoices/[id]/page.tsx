@@ -2,7 +2,8 @@
 
 import React, { use, useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   useInvoice,
   useInvoiceLineItems,
@@ -12,14 +13,12 @@ import {
   useApproveInvoice,
   useRejectInvoice,
   useRevalidateInvoice,
+  prefetchInvoice,
 } from "@/features/invoices/hooks"
-import type {
-  LineItemOut,
-  ValidationIssueOut,
-  AuditEventOut,
-} from "@/features/invoices/api"
+import { useDocumentInvoices } from "@/features/documents/hooks"
+import { InvoiceHistory } from "@/features/invoices/components/invoice-history"
 import { useCurrentUser } from "@/features/auth/hooks"
-import { hasPermission } from "@/lib/permissions"
+import { canAdmin, hasPermission } from "@/lib/permissions"
 import {
   InvoiceViewer,
   EvidenceBox,
@@ -27,8 +26,9 @@ import {
 import { StatusBadge } from "@/components/status-badge"
 import { Money } from "@/components/money"
 import { CurrencySelect } from "@/components/currency-select"
+import { CurrencySourceBadge } from "@/components/currency-source-badge"
+import { CurrencyResolver } from "@/features/invoices/components/currency-resolver"
 import type { CurrencyCode } from "@/lib/api/types"
-import { DateTime } from "@/components/date-time"
 import { ErrorState } from "@/components/error-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,8 +62,14 @@ import {
   History,
   FileSpreadsheet,
   FileText,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
+
+// One shared empty list keeps memoized values stable while queries load.
+const EMPTY: never[] = []
 
 export default function InvoiceReviewPage({
   params,
@@ -77,33 +83,44 @@ export default function InvoiceReviewPage({
       : (params as { id: string })
   const id = resolvedParams.id
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const { data: user } = useCurrentUser()
 
-  const { data: invoice, isLoading, isError, error, refetch } = useInvoice(id)
-  const { data: rawLineItems = [] } = useInvoiceLineItems(id)
-  const { data: rawHistory = [] } = useInvoiceHistory(id)
-  const { data: issues = [] } = useInvoiceValidations(id)
-
-  const lineItems = (
-    Array.isArray(rawLineItems)
-      ? rawLineItems
-      : ((rawLineItems as any)?.items ?? [])
-  ) as LineItemOut[]
-  const history = (
-    Array.isArray(rawHistory) ? rawHistory : ((rawHistory as any)?.items ?? [])
-  ) as AuditEventOut[]
-  const issueList = React.useMemo(
-    () =>
-      (Array.isArray(issues)
-        ? issues
-        : ((issues as any)?.items ?? [])) as ValidationIssueOut[],
-    [issues]
+  const {
+    data: invoice,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isPlaceholderData: isSwitching,
+  } = useInvoice(id)
+  // Every invoice in the same document, in page order, so the viewer and
+  // the data panel can follow each other.
+  const { data: rawDocInvoices } = useDocumentInvoices(
+    invoice?.document_id ?? ""
   )
+  const docInvoices = [...(rawDocInvoices ?? [])].sort(
+    (a, b) =>
+      (a.page_start ?? 0) - (b.page_start ?? 0) ||
+      a.segment_index - b.segment_index
+  )
+  const invoiceIndex = docInvoices.findIndex((i) => i.id === id)
+  const prevInvoice = invoiceIndex > 0 ? docInvoices[invoiceIndex - 1] : null
+  const nextInvoice =
+    invoiceIndex >= 0 && invoiceIndex < docInvoices.length - 1
+      ? docInvoices[invoiceIndex + 1]
+      : null
+  const { data: lineItems = EMPTY } = useInvoiceLineItems(id)
+  const { data: history = EMPTY } = useInvoiceHistory(id)
+  const { data: issueList = EMPTY } = useInvoiceValidations(id)
 
-  const currencyCandidates: CurrencyCode[] = React.useMemo(() => {
-    // 1. From alternatives_json.alternatives.currency
-    const alts = (invoice?.alternatives_json as any)?.alternatives?.currency
-    if (Array.isArray(alts) && alts.length > 0) return alts as CurrencyCode[]
+  // Ranked by the backend; fall back to the INVALID_CURRENCY issue's candidates.
+  const currencyCandidates: CurrencyCode[] = (() => {
+    // 1. Ranked by the backend (most likely first)
+    if (invoice?.currency_suggestions?.length) {
+      return invoice.currency_suggestions
+    }
 
     // 2. From INVALID_CURRENCY issue details_json.candidates
     const invalidCurrencyIssue = issueList.find(
@@ -116,7 +133,7 @@ export default function InvoiceReviewPage({
     }
 
     return []
-  }, [invoice?.alternatives_json, issueList])
+  })()
 
   const { mutate: correctInvoice, isPending: isSavingCorrection } =
     useCorrectInvoice()
@@ -158,6 +175,67 @@ export default function InvoiceReviewPage({
 
   const [conflictOpen, setConflictOpen] = useState(false)
 
+  // The page shown in the viewer. It starts at ?page= (kept when switching
+  // invoices) or the invoice's first page.
+  const urlPage = Number(searchParams.get("page")) || null
+  const [viewerPage, setViewerPage] = useState<number | null>(urlPage)
+
+  // Switching to another invoice keeps the page but drops per-invoice state.
+  const [shownId, setShownId] = useState(id)
+  if (shownId !== id) {
+    setShownId(id)
+    setActiveEvidence(null)
+    setIsEditing(false)
+    setEditedFields({})
+    setCorrectionErrors({})
+    setCorrectionReason("")
+    setApproveOpenState(false)
+    setRejectOpen(false)
+    setRejectReason("")
+    setConflictOpen(false)
+    if (urlPage) setViewerPage(urlPage)
+  }
+
+  const coversPage = (
+    inv: { page_start?: number | null; page_end?: number | null },
+    page: number
+  ) =>
+    inv.page_start != null &&
+    inv.page_start <= page &&
+    page <= (inv.page_end ?? inv.page_start)
+
+  const currentPage = viewerPage ?? invoice?.page_start ?? 1
+  // The invoice printed on the page being viewed (this one if it covers it).
+  const pageOwner =
+    invoice && coversPage(invoice, currentPage)
+      ? invoice
+      : (docInvoices.find((i) => coversPage(i, currentPage)) ?? null)
+
+  const openInvoice = (invoiceId: string, page: number) => {
+    router.replace(`/invoices/${invoiceId}?page=${page}`, { scroll: false })
+  }
+
+  const handlePageChange = (page: number) => {
+    setViewerPage(page)
+    const owner =
+      invoice && coversPage(invoice, page)
+        ? invoice
+        : docInvoices.find((i) => coversPage(i, page))
+    if (owner && owner.id !== id && !isEditing) {
+      openInvoice(owner.id, page)
+    } else {
+      // Same invoice: just remember the page in the URL (no navigation).
+      window.history.replaceState(null, "", `/invoices/${id}?page=${page}`)
+    }
+  }
+
+  // Neighbouring invoices load instantly when paging through a document.
+  useEffect(() => {
+    for (const neighbour of [prevInvoice, nextInvoice]) {
+      if (neighbour) prefetchInvoice(queryClient, neighbour.id)
+    }
+  }, [queryClient, prevInvoice?.id, nextInvoice?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Keyboard navigation (§6.3)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -186,6 +264,7 @@ export default function InvoiceReviewPage({
       EvidenceBox | undefined
     if (evidence) {
       setActiveEvidence(evidence)
+      if (evidence.page_number) setViewerPage(evidence.page_number)
       setMobileView("viewer")
     }
   }
@@ -411,6 +490,47 @@ export default function InvoiceReviewPage({
           <span className="rounded bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground sm:text-xs">
             v{invoice.version}
           </span>
+          {docInvoices.length > 1 && invoiceIndex >= 0 && (
+            <div className="flex items-center gap-0.5 rounded-md border bg-muted/30 px-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                disabled={!prevInvoice}
+                aria-label="Previous invoice in this document"
+                onClick={() =>
+                  prevInvoice &&
+                  openInvoice(prevInvoice.id, prevInvoice.page_start ?? 1)
+                }
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="px-1 font-mono text-[11px] text-muted-foreground tabular-nums">
+                {invoiceIndex + 1} / {docInvoices.length}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                disabled={!nextInvoice}
+                aria-label="Next invoice in this document"
+                onClick={() =>
+                  nextInvoice &&
+                  openInvoice(nextInvoice.id, nextInvoice.page_start ?? 1)
+                }
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+          {isSwitching && (
+            <Loader2
+              className="h-4 w-4 animate-spin text-muted-foreground"
+              aria-label="Loading invoice"
+            />
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -421,7 +541,7 @@ export default function InvoiceReviewPage({
               onClick={
                 isEditing ? handleSaveCorrection : () => handleStartEdit()
               }
-              disabled={isSavingCorrection}
+              disabled={isSavingCorrection || isSwitching}
               className="h-8 gap-1.5 text-xs"
             >
               {isEditing ? (
@@ -452,7 +572,7 @@ export default function InvoiceReviewPage({
             variant="outline"
             size="sm"
             onClick={() => revalidateInvoice(id)}
-            disabled={isRevalidating}
+            disabled={isRevalidating || isSwitching}
             className="h-8 gap-1.5 text-xs"
           >
             <RotateCw
@@ -466,6 +586,7 @@ export default function InvoiceReviewPage({
               variant="outline"
               size="sm"
               onClick={() => setRejectOpen(true)}
+              disabled={isSwitching}
               className="h-8 gap-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20"
             >
               <X className="h-3.5 w-3.5" />
@@ -477,7 +598,7 @@ export default function InvoiceReviewPage({
             <Button
               size="sm"
               onClick={() => setApproveOpen(true)}
-              disabled={isApproved}
+              disabled={isApproved || isSwitching}
               className="h-8 gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
             >
               <Check className="h-3.5 w-3.5" />
@@ -530,8 +651,36 @@ export default function InvoiceReviewPage({
         >
           <InvoiceViewer
             documentId={invoice.document_id}
-            pageStart={invoice.page_start}
+            page={currentPage}
+            onPageChange={handlePageChange}
             activeEvidence={activeEvidence}
+            pageLabel={
+              pageOwner && pageOwner.id !== id ? (
+                <button
+                  type="button"
+                  onClick={() => openInvoice(pageOwner.id, currentPage)}
+                  className="truncate rounded bg-amber-500/10 px-2 py-0.5 font-medium text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
+                  title={
+                    isEditing
+                      ? "Save or cancel your edits to switch invoice"
+                      : undefined
+                  }
+                  disabled={isEditing}
+                >
+                  {isEditing
+                    ? `Page of invoice ${pageOwner.invoice_number ?? ""} (finish editing to switch)`
+                    : `Open invoice ${pageOwner.invoice_number ?? ""}`}
+                </button>
+              ) : !pageOwner && docInvoices.length > 0 ? (
+                <span className="truncate text-muted-foreground">
+                  No invoice on this page
+                </span>
+              ) : docInvoices.length > 1 ? (
+                <span className="truncate font-mono text-muted-foreground">
+                  Invoice {invoiceIndex + 1} of {docInvoices.length}
+                </span>
+              ) : null
+            }
           />
         </div>
 
@@ -765,38 +914,41 @@ export default function InvoiceReviewPage({
                     label="Currency"
                     value={
                       invoice.currency ? (
-                        <span className="font-mono font-semibold">
-                          {invoice.currency}
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="font-mono font-semibold">
+                            {invoice.currency}
+                          </span>
+                          <CurrencySourceBadge
+                            source={invoice.currency_source}
+                            reason={invoice.currency_reason}
+                          />
                         </span>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">
-                            {invoice.currency_raw
-                              ? `${invoice.currency_raw} – not confirmed`
-                              : "—"}
-                          </span>
-                          {hasPermission(user?.role, "INVOICE_CORRECT") && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-6 px-2 text-[10px]"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleStartEdit()
-                                setActiveTab("fields")
-                              }}
-                            >
-                              Set currency
-                            </Button>
-                          )}
-                        </div>
+                        <span className="text-amber-600 dark:text-amber-500">
+                          {invoice.currency_raw
+                            ? `'${invoice.currency_raw}' – needs confirmation`
+                            : "Not printed – needs confirmation"}
+                        </span>
                       )
                     }
                     isCorrected={correctedFields.includes("currency")}
                     evidence={sourceEvidence.currency as EvidenceBox}
                     onClick={() => handleFieldClick("currency")}
                   />
+                  {!invoice.currency &&
+                    !isEditing &&
+                    hasPermission(user?.role, "INVOICE_CORRECT") &&
+                    invoice.review_status !== "APPROVED" &&
+                    invoice.review_status !== "REJECTED" && (
+                      <CurrencyResolver
+                        invoiceId={invoice.id}
+                        version={invoice.version}
+                        printed={invoice.currency_raw}
+                        suggestions={currencyCandidates}
+                        isAdmin={canAdmin(user?.role)}
+                        onConflict={() => setConflictOpen(true)}
+                      />
+                    )}
                   <FieldRow
                     label="Subtotal (Net)"
                     value={
@@ -1048,30 +1200,7 @@ export default function InvoiceReviewPage({
               value="history"
               className="m-0 flex-1 space-y-3 overflow-y-auto p-4"
             >
-              {history.length === 0 ? (
-                <div className="py-8 text-center text-xs text-muted-foreground">
-                  No modification history.
-                </div>
-              ) : (
-                history.map((evt) => (
-                  <div
-                    key={evt.id}
-                    className="space-y-1 rounded-lg border bg-card p-3 text-xs"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-semibold uppercase">
-                        {evt.action}
-                      </span>
-                      <DateTime value={evt.created_at} />
-                    </div>
-                    {evt.actor_id && (
-                      <p className="font-mono text-[11px] text-muted-foreground">
-                        Actor: {evt.actor_id}
-                      </p>
-                    )}
-                  </div>
-                ))
-              )}
+              <InvoiceHistory actions={history} />
             </TabsContent>
           </Tabs>
         </div>

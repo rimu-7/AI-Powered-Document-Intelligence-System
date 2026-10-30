@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 import {
   invoicesApi,
   CorrectionRequest,
@@ -12,8 +18,19 @@ import { toast } from "sonner"
 export function useInvoice(id: string) {
   return useQuery({
     queryKey: qk.invoices.detail(id),
+    // Switching invoices keeps the previous one on screen until the next loads.
+    placeholderData: keepPreviousData,
     queryFn: () => invoicesApi.get(id),
     enabled: !!id,
+    staleTime: 30_000,
+  })
+}
+
+/** Load an invoice into the cache ahead of time (e.g. the next one in a document). */
+export function prefetchInvoice(queryClient: QueryClient, id: string) {
+  return queryClient.prefetchQuery({
+    queryKey: qk.invoices.detail(id),
+    queryFn: () => invoicesApi.get(id),
     staleTime: 30_000,
   })
 }
@@ -21,6 +38,7 @@ export function useInvoice(id: string) {
 export function useInvoiceLineItems(id: string) {
   return useQuery({
     queryKey: qk.invoices.lineItems(id),
+    placeholderData: keepPreviousData,
     queryFn: () => invoicesApi.lineItems(id),
     enabled: !!id,
     staleTime: 30_000,
@@ -30,6 +48,7 @@ export function useInvoiceLineItems(id: string) {
 export function useInvoiceHistory(id: string) {
   return useQuery({
     queryKey: qk.invoices.history(id),
+    placeholderData: keepPreviousData,
     queryFn: () => invoicesApi.history(id),
     enabled: !!id,
     staleTime: 30_000,
@@ -42,6 +61,7 @@ export function useInvoiceValidations(
 ) {
   return useQuery({
     queryKey: qk.invoices.validations(id, params),
+    placeholderData: keepPreviousData,
     queryFn: () => invoicesApi.validations(id, params),
     enabled: !!id,
     staleTime: 30_000,

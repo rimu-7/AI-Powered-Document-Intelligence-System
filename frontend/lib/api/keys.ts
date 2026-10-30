@@ -39,6 +39,7 @@ export const qk = {
     list: (params?: Record<string, unknown>) =>
       ["jobs", "list", params ?? {}] as const,
     detail: (id: string) => ["jobs", "detail", id] as const,
+    active: () => ["jobs", "active"] as const,
   },
   reviews: {
     all: () => ["reviews"] as const,
@@ -66,6 +67,9 @@ export const qk = {
       ["search", "semantic", body] as const,
     hybrid: (body: Record<string, unknown>) =>
       ["search", "hybrid", body] as const,
+  },
+  organization: {
+    currencySettings: () => ["organization", "currency-settings"] as const,
   },
   admin: {
     stats: () => ["admin", "stats"] as const,

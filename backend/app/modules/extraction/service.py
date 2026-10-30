@@ -19,7 +19,7 @@ from app.core.metrics import EXTRACTION_DURATION
 from app.modules.extraction.confidence import heuristic_confidence
 from app.modules.extraction.crosscheck import cross_check as crosscheck_invoice
 from app.modules.extraction.crosscheck import pair_invoices
-from app.modules.extraction.currency_context import infer_currency
+from app.modules.extraction.currency_resolution import resolve_from_document
 from app.modules.extraction.grounding import GroundingPage, ground_invoice
 from app.modules.extraction.normalization import normalize_invoice
 from app.modules.extraction.providers.base import ExtractionProvider, ExtractionRequest
@@ -283,8 +283,9 @@ def extract_document(
             pairs = pair_invoices(primary_invoices, secondary_invoices)
             primary_invoices = [crosscheck_invoice(p, s) if s is not None else p for p, s in pairs]
             usage["cross_checked_invoices"] = usage.get("cross_checked_invoices", 0) + sum(1 for _, s in pairs if s is not None)
+        segment_text = "\n".join(gp.text for gp in grounding_pages.values())
         for inv in primary_invoices:
-            infer_currency(inv)
+            resolve_from_document(inv, segment_text)
             inv.segment_index = len(normalized)
             inv.ocr_confidence = round(sum(confs) / len(confs), 4) if confs else None
             if seg_run.fallback_from:

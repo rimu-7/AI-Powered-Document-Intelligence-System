@@ -57,6 +57,7 @@ class ReviewActionOut(BaseModel):
     reason: str | None
     invoice_version: int | None
     created_at: datetime
+    reviewer_name: str | None = None
 
 
 class ReviewTaskOut(BaseModel):

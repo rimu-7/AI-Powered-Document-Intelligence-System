@@ -17,6 +17,7 @@ export type MutationType =
   | "create_user"
   | "update_user"
   | "revoke_user_sessions"
+  | "update_currency_settings"
 
 export async function invalidateForMutation(
   queryClient: QueryClient,
@@ -157,6 +158,19 @@ export async function invalidateForMutation(
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: qk.comparisons.all() }),
         queryClient.invalidateQueries({ queryKey: qk.jobs.all() }),
+      ])
+      break
+
+    case "update_currency_settings":
+      // A policy change can resolve many waiting invoices at once.
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: qk.organization.currencySettings(),
+        }),
+        queryClient.invalidateQueries({ queryKey: qk.invoices.all() }),
+        queryClient.invalidateQueries({ queryKey: qk.documents.all() }),
+        queryClient.invalidateQueries({ queryKey: qk.reviews.all() }),
+        queryClient.invalidateQueries({ queryKey: qk.admin.stats() }),
       ])
       break
 

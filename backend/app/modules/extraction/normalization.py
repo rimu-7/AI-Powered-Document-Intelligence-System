@@ -13,7 +13,7 @@ from app.modules.extraction.schemas import (
     RawInvoice,
 )
 from app.shared.dates import parse_date
-from app.shared.enums import CurrencyCode
+from app.shared.enums import CurrencyCode, CurrencySource
 from app.shared.money import AMBIGUOUS_SYMBOLS, UNAMBIGUOUS_SYMBOLS, detect_currency_token, parse_amount, to_currency_code
 from app.shared.text import normalize_whitespace, truncate
 
@@ -166,6 +166,8 @@ def normalize_invoice(raw: RawInvoice, *, segment_index: int, page_start: int | 
     if len(currency_hints) > 1 or (inv.currency and currency_hints and currency_hints != {inv.currency}):
         inv.alternatives["currency_conflict"] = sorted(currency_hints | ({inv.currency} if inv.currency else set()))
         notes.append(NormalizationNote(field="currency", code="CURRENCY_CONFLICT", message="Amounts carry conflicting currency labels"))
+    if inv.currency is not None:
+        inv.currency_source = CurrencySource.PRINTED
 
     for pos, item in enumerate(raw.line_items, start=1):
         li = NormalizedLineItem(position=pos, description=_clean(item.description, 2000))

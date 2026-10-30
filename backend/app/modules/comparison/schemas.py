@@ -50,6 +50,14 @@ class ReconciliationCreate(BaseModel):
     options: ComparisonOptions = Field(default_factory=ComparisonOptions)
 
 
+class ComparedDocument(BaseModel):
+    id: uuid.UUID
+    side: str = Field(description="left (PDF side) or right (second PDF or spreadsheet)")
+    filename: str
+    file_kind: str
+    deleted: bool = False
+
+
 class ComparisonOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,6 +74,8 @@ class ComparisonOut(BaseModel):
     created_by: uuid.UUID | None
     created_at: datetime
     completed_at: datetime | None
+    documents: list[ComparedDocument] = Field(default_factory=list)
+    error_message: str | None = Field(default=None, description="Why the run failed, when status is FAILED")
 
 
 class ComparisonAccepted(BaseModel):

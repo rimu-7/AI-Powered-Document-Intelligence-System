@@ -5,10 +5,11 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.shared.enums import (
     CurrencyCode,
+    CurrencySource,
     DocumentType,
     ExtractionStatus,
     ResolutionStatus,
@@ -76,6 +77,9 @@ class InvoiceOut(BaseModel):
     payment_reference: str | None
     currency: CurrencyCode | None
     currency_raw: str | None
+    currency_source: CurrencySource | None = Field(description="How the currency was decided; null while it is unresolved")
+    currency_reason: str | None = Field(description="Why the currency was chosen automatically")
+    currency_suggestions: list[CurrencyCode] = Field(description="Likely currencies, most likely first, while unresolved")
     subtotal: Decimal | None
     discount_amount: Decimal | None
     shipping_amount: Decimal | None

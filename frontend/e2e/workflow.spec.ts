@@ -32,13 +32,13 @@ test.describe("DocIntel Application Workflows", () => {
   test("compare wizard lets user toggle between modes", async ({ page }) => {
     await page.goto("/compare/new")
     await expect(
-      page.getByText("New Comparison / Reconciliation")
+      page.getByRole("heading", { name: "New comparison" })
     ).toBeVisible()
-    await expect(page.getByText("Compare Two Documents")).toBeVisible()
+    await expect(page.getByText("Compare two documents")).toBeVisible()
 
-    await page.getByRole("tab", { name: /Reconciliation/i }).click()
+    await page.getByRole("tab", { name: /spreadsheet/i }).click()
     await expect(
-      page.getByText("Reconcile Invoices with Spreadsheet")
+      page.getByText("Check invoices against a spreadsheet")
     ).toBeVisible()
   })
 })

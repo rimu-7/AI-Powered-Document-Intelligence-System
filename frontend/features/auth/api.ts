@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client"
+import type { Res } from "@/lib/api/typed"
 import type { components, paths } from "@/lib/api/schema"
 import axios from "axios"
 
@@ -36,12 +37,12 @@ export const authApi = {
   },
 
   async getMe(): Promise<UserOut> {
-    const res = await apiClient.get<any>("/auth/me")
+    const res = await apiClient.get<Res<"GET /auth/me">>("/auth/me")
     return res.data?.user ?? res.data
   },
 
   async getPublicConfig(): Promise<PublicConfig> {
-    const res = await apiClient.get<PublicConfig>("/config/public")
+    const res = await apiClient.get<Res<"GET /config/public">>("/config/public")
     return res.data
   },
 }

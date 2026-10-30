@@ -21,7 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base, CreatedAt, Timestamps, UUIDPrimaryKey
 from app.core.db_types import JSON, MONEY, QUANTITY, RATIO, UNIT_PRICE, enum_type, json_default
-from app.shared.enums import CurrencyCode, DocumentType, ExtractionStatus, ReviewStatus, ValidationOutcome
+from app.shared.enums import CurrencyCode, CurrencySource, DocumentType, ExtractionStatus, ReviewStatus, ValidationOutcome
 
 
 def _doc_fk() -> ForeignKeyConstraint:
@@ -112,6 +112,7 @@ class InvoiceRecord(UUIDPrimaryKey, Timestamps, Base):
     payment_reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
     currency: Mapped[CurrencyCode | None] = mapped_column(enum_type(CurrencyCode, length=3), nullable=True)
     currency_raw: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    currency_source: Mapped[CurrencySource | None] = mapped_column(enum_type(CurrencySource), nullable=True)
     subtotal: Mapped[Decimal | None] = mapped_column(MONEY, nullable=True)
     discount_amount: Mapped[Decimal | None] = mapped_column(MONEY, nullable=True)
     shipping_amount: Mapped[Decimal | None] = mapped_column(MONEY, nullable=True)
@@ -132,6 +133,18 @@ class InvoiceRecord(UUIDPrimaryKey, Timestamps, Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
     __mapper_args__ = {"version_id_col": version}
+
+    @property
+    def currency_reason(self) -> str | None:
+        """Why the currency was chosen automatically (None when printed or set by hand)."""
+        ev = (self.source_evidence_json or {}).get("currency")
+        return ev.get("reason") if isinstance(ev, dict) else None
+
+    @property
+    def currency_suggestions(self) -> list[str]:
+        """Candidate currencies for an unresolved symbol, most likely first."""
+        alts = (self.alternatives_json or {}).get("alternatives", {}).get("currency")
+        return [str(c) for c in alts] if isinstance(alts, list) else []
 
 
 class InvoiceLineItem(UUIDPrimaryKey, Base):

@@ -1,11 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { jobsApi, JobListParams } from "./api"
+import { jobsApi, JobListParams, type ActiveJob } from "./api"
 import { qk } from "@/lib/api/keys"
 import { invalidateForMutation } from "@/lib/api/invalidation"
 import { toast } from "sonner"
 import { useRef, useEffect } from "react"
 
-const TERMINAL_STATES = ["COMPLETED", "FAILED", "CANCELLED"]
+// Must match RunState.is_terminal on the backend.
+export const TERMINAL_STATES = [
+  "COMPLETED",
+  "COMPLETED_WITH_WARNINGS",
+  "REQUIRES_REVIEW",
+  "FAILED",
+  "CANCELLED",
+]
 
 export function isTerminal(state?: string): boolean {
   if (!state) return false
@@ -103,4 +110,39 @@ export function useCancelJob() {
       toast.error(err.message || "Failed to cancel job")
     },
   })
+}
+
+/**
+ * Documents being processed, plus those finished in the last two minutes.
+ * Polls quickly while anything is running; when a document finishes, the
+ * review queue and document lists refresh so its invoices appear at once.
+ */
+export function useActiveJobs() {
+  const queryClient = useQueryClient()
+  const query = useQuery({
+    queryKey: qk.jobs.active(),
+    queryFn: jobsApi.active,
+    refetchInterval: (q) =>
+      (q.state.data ?? []).some((j) => !isTerminal(j.state)) ? 2000 : 5000,
+    refetchIntervalInBackground: false,
+  })
+
+  const running = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    const jobs: ActiveJob[] = query.data ?? []
+    const now = new Set(
+      jobs.filter((j) => !isTerminal(j.state)).map((j) => j.job_id)
+    )
+    const before = running.current
+    running.current = now
+    if (before && [...before].some((id) => !now.has(id))) {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: qk.reviews.all() }),
+        queryClient.invalidateQueries({ queryKey: qk.documents.all() }),
+        queryClient.invalidateQueries({ queryKey: qk.admin.stats() }),
+      ])
+    }
+  }, [query.data, queryClient])
+
+  return query
 }

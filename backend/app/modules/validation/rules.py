@@ -200,6 +200,14 @@ def rule_dates(view: InvoiceView, ctx: ValidationContext) -> list[IssueDraft]:
     return issues
 
 
+def _unresolved_currency_message(raw: str, candidates: Any) -> str:
+    options = [str(c) for c in candidates] if isinstance(candidates, list) else []
+    if not options:
+        return f"Currency '{raw}' is not a known currency; confirm the ISO 4217 code"
+    shown = ", ".join(options[:4]) + (", …" if len(options) > 4 else "")
+    return f"'{raw}' could be {shown}; confirm the currency (an organization rule makes this automatic)"
+
+
 def rule_currency(view: InvoiceView, ctx: ValidationContext) -> list[IssueDraft]:
     issues: list[IssueDraft] = []
     if view.currency is None and view.currency_raw:
@@ -207,7 +215,7 @@ def rule_currency(view: InvoiceView, ctx: ValidationContext) -> list[IssueDraft]
             IssueDraft(
                 "INVALID_CURRENCY",
                 Severity.WARNING,
-                f"Currency '{view.currency_raw}' is ambiguous or unknown; confirm the ISO 4217 code",
+                _unresolved_currency_message(view.currency_raw, view.alternatives.get("currency")),
                 field_path="currency",
                 actual=view.currency_raw,
                 details={"candidates": view.alternatives.get("currency")},

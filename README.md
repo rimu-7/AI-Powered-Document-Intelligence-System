@@ -12,6 +12,7 @@ with the evidence highlighted on the page.
 | **Formats** | PDF (native and scanned), PNG, JPG, TIFF (multi-page), XLSX, XLS, CSV |
 | **Extraction** | invoice number, dates, supplier, customer, addresses, currency, subtotal, tax, total, line items; every value grounded in the source text, `null` when not printed |
 | **Validation** | line totals, subtotal, tax, total, currency, duplicates (by number and by file hash); `Decimal` arithmetic, absolute tolerance |
+| **Currency** | resolved automatically from what is printed, the supplier's country, the supplier's history, organization rules and what reviewers taught it; never against a printed symbol, always with the reason shown |
 | **Cross-verification** | PDF↔PDF and PDF↔Excel/CSV, with evidence from both sides |
 | **Review** | corrections with full history, approval, rejection, optimistic locking |
 | **Search** | keyword (PostgreSQL full text), semantic (pgvector), hybrid |

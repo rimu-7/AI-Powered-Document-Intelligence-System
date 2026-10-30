@@ -22,6 +22,7 @@ from app.modules.extraction.api_schemas import (
     ValidationIssueOut,
 )
 from app.modules.extraction.models import ExtractionRun, InvoiceLineItem, InvoiceRecord
+from app.modules.identity.models import User
 from app.modules.jobs.schemas import JobAccepted
 from app.modules.jobs.service import build_run
 from app.modules.reviews import service as reviews
@@ -114,14 +115,16 @@ async def get_line_items(invoice_id: uuid.UUID, principal: Reader, session: Sess
 
 
 @router.get("/invoices/{invoice_id}/history", response_model=list[ReviewActionOut])
-async def invoice_history(invoice_id: uuid.UUID, principal: Reader, session: SessionDep) -> list[ReviewAction]:
+async def invoice_history(invoice_id: uuid.UUID, principal: Reader, session: SessionDep) -> list[ReviewActionOut]:
+    """Every correction, approval and rejection of this invoice, oldest first, with the reviewer's name."""
     invoice = await reviews.load_invoice(session, principal, invoice_id)
     rows = await session.execute(
-        select(ReviewAction)
+        select(ReviewAction, User.full_name)
+        .outerjoin(User, User.id == ReviewAction.reviewer_id)
         .where(ReviewAction.invoice_record_id == invoice.id, ReviewAction.organization_id == principal.organization_id)
         .order_by(ReviewAction.created_at, ReviewAction.id)
     )
-    return list(rows.scalars())
+    return [ReviewActionOut.model_validate(action).model_copy(update={"reviewer_name": name}) for action, name in rows.all()]
 
 
 async def _issues_page(session: SessionDep, stmt, page: PageParams) -> Page[ValidationIssueOut]:  # type: ignore[no-untyped-def]

@@ -5,13 +5,15 @@ import { http, HttpResponse } from "msw"
 import { server } from "../msw/server"
 import { renderWithProviders } from "../utils"
 import InvoiceReviewPage from "@/app/(app)/invoices/[id]/page"
-import { mockInvoice } from "../msw/handlers"
+import { mockInvoice, page } from "../msw/handlers"
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
+    replace: vi.fn(),
     back: vi.fn(),
   }),
+  useSearchParams: () => new URLSearchParams(),
 }))
 
 describe("InvoiceReviewPage component", () => {
@@ -99,20 +101,22 @@ describe("InvoiceReviewPage component", () => {
   it("renders suggested candidates for INVALID_CURRENCY and clicking one activates edit mode", async () => {
     server.use(
       http.get("*/bff/api/v1/invoices/:id/validations", () => {
-        return HttpResponse.json([
-          {
-            id: "val-invalid-curr",
-            invoice_id: "inv-001",
-            rule_code: "INVALID_CURRENCY",
-            severity: "WARNING",
-            message: "Currency symbol '$' is ambiguous",
-            field_path: "currency",
-            resolution_status: "OPEN",
-            details_json: {
-              candidates: ["USD", "CAD", "AUD"],
+        return HttpResponse.json(
+          page([
+            {
+              id: "val-invalid-curr",
+              invoice_id: "inv-001",
+              rule_code: "INVALID_CURRENCY",
+              severity: "WARNING",
+              message: "Currency symbol '$' is ambiguous",
+              field_path: "currency",
+              resolution_status: "OPEN",
+              details_json: {
+                candidates: ["USD", "CAD", "AUD"],
+              },
             },
-          },
-        ])
+          ])
+        )
       })
     )
 

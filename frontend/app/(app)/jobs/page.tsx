@@ -1,5 +1,6 @@
 "use client"
 
+import { jobTypeLabel } from "@/lib/labels"
 import React, { Suspense } from "react"
 import { useQueryState, parseAsString, parseAsInteger } from "nuqs"
 import { PageHeader } from "@/components/page-header"
@@ -124,7 +125,8 @@ function JobsContent() {
                           <ExternalLink className="h-3 w-3 text-muted-foreground" />
                         </Link>
                         <span className="mt-1 inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground uppercase">
-                          {job.job_type} · Attempt #{job.attempt_number}
+                          {jobTypeLabel(job.job_type)} · Attempt #
+                          {job.attempt_number}
                         </span>
                       </div>
                       <StatusBadge status={job.state} />
@@ -193,7 +195,7 @@ function JobsContent() {
                         </Link>
                       </TableCell>
                       <TableCell className="font-mono text-xs uppercase">
-                        {job.job_type}
+                        {jobTypeLabel(job.job_type)}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={job.state} />

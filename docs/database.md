@@ -112,6 +112,7 @@ erDiagram
         string supplier_name
         string customer_name
         string currency "ISO 4217"
+        string currency_source "PRINTED DOCUMENT_CONTEXT SUPPLIER_HISTORY ... HUMAN"
         numeric subtotal "NUMERIC(20,4)"
         numeric tax_amount
         numeric total_amount

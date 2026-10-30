@@ -294,3 +294,15 @@ class CurrencyCode(StrEnum):
     BGN = "BGN"
     ISK = "ISK"
     CLF = "CLF"
+
+
+class CurrencySource(StrEnum):
+    """How an invoice's currency was decided, strongest evidence first."""
+
+    PRINTED = "PRINTED"  # an ISO code or a symbol that names one currency
+    DOCUMENT_CONTEXT = "DOCUMENT_CONTEXT"  # ambiguous or missing symbol + the supplier's country on the page
+    SUPPLIER_HISTORY = "SUPPLIER_HISTORY"  # this supplier's earlier confirmed invoices
+    ORGANIZATION_RULE = "ORGANIZATION_RULE"  # an admin rule such as "$ means USD"
+    LEARNED = "LEARNED"  # reviewers resolved this symbol the same way repeatedly
+    ORGANIZATION_DEFAULT = "ORGANIZATION_DEFAULT"  # the organization's default currency
+    HUMAN = "HUMAN"  # set by a reviewer

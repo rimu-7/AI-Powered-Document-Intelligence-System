@@ -5,9 +5,9 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.shared.enums import JobType, RunState, TaskState, TaskType
+from app.shared.enums import FileKind, JobType, RunState, TaskState, TaskType
 
 
 class TaskOut(BaseModel):
@@ -58,3 +58,22 @@ class JobAccepted(BaseModel):
     job_id: uuid.UUID
     status_url: str
     state: RunState
+
+
+class ActiveJobOut(BaseModel):
+    """A document being processed, or one that finished moments ago."""
+
+    job_id: uuid.UUID
+    document_id: uuid.UUID
+    filename: str
+    file_kind: FileKind
+    state: RunState
+    pages_total: int
+    pages_completed: int
+    pages_failed: int
+    progress_percent: Decimal
+    created_at: datetime
+    completed_at: datetime | None
+    sanitized_error_message: str | None
+    invoices: int = Field(description="Invoices extracted so far")
+    open_reviews: int = Field(description="Invoices from this document waiting for a reviewer")

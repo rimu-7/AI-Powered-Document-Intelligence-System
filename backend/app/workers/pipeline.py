@@ -24,7 +24,7 @@ from app.core.database import sync_session
 from app.core.exceptions import PermanentProcessingError
 from app.core.logging import document_id_var, get_logger
 from app.modules.auditing.service import record_audit
-from app.modules.comparison.models import DocumentComparison
+from app.modules.comparison.models import ComparisonDocument, DocumentComparison
 from app.modules.comparison.service import run_comparison
 from app.modules.documents.fingerprint import FileRejected, check_office_archive
 from app.modules.documents.models import (
@@ -35,6 +35,7 @@ from app.modules.documents.models import (
     StorageObject,
 )
 from app.modules.documents.storage import bucket_for, get_storage, make_key
+from app.modules.extraction.currency_policy import load_policy_sync, resolve_with_organization
 from app.modules.extraction.models import ExtractionRun, InvoiceLineItem, InvoiceRecord
 from app.modules.extraction.prompts import INVOICE_PROMPT_VERSION
 from app.modules.extraction.providers.factory import get_extraction_provider
@@ -511,9 +512,20 @@ def _persist_extraction(
     revision = (
         session.execute(select(func.max(ExtractionRun.extraction_revision)).where(ExtractionRun.document_id == doc.id)).scalar_one() or 0
     ) + 1
-    session.execute(
+    superseded = session.execute(
         update(InvoiceRecord).where(InvoiceRecord.document_id == doc.id, InvoiceRecord.superseded_at.is_(None)).values(superseded_at=now)
     )
+    if superseded.rowcount:  # type: ignore[attr-defined]
+        # Finished comparisons over the replaced invoices no longer reflect the data.
+        session.execute(
+            update(DocumentComparison)
+            .where(
+                DocumentComparison.organization_id == doc.organization_id,
+                DocumentComparison.id.in_(select(ComparisonDocument.comparison_id).where(ComparisonDocument.document_id == doc.id)),
+                DocumentComparison.status == ComparisonStatus.COMPLETED,
+            )
+            .values(status=ComparisonStatus.STALE, stale_reason="document reprocessed")
+        )
     if result is None:
         status = ExtractionStatus.SKIPPED
     elif result.failed_segments and result.invoices:
@@ -549,7 +561,11 @@ def _persist_extraction(
     session.add(extraction)
     session.flush()
     ids: list[uuid.UUID] = []
-    for inv in result.invoices if result else []:
+    invoices = result.invoices if result else []
+    policy = load_policy_sync(session, doc.organization_id) if any(inv.currency is None for inv in invoices) else None
+    for inv in invoices:
+        if policy is not None:
+            resolve_with_organization(session, doc.organization_id, doc.id, inv, policy)
         kind = {"CREDIT_NOTE": DocumentType.CREDIT_NOTE, "RECEIPT": DocumentType.RECEIPT}.get(inv.document_kind or "")
         if kind is None:
             kind = doc.document_type if doc.document_type.is_invoice_like else DocumentType.INVOICE
@@ -577,6 +593,7 @@ def _persist_extraction(
             payment_reference=inv.payment_reference,
             currency=inv.currency,
             currency_raw=inv.currency_raw,
+            currency_source=inv.currency_source,
             subtotal=inv.subtotal,
             discount_amount=inv.discount_amount,
             shipping_amount=inv.shipping_amount,

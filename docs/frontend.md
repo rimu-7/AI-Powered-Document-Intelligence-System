@@ -58,10 +58,35 @@ flowchart LR
 * Money is formatted from the API's decimal strings, never with float
   arithmetic. A `null` currency is shown with the printed symbol and an
   "unconfirmed" badge, never as a default currency.
+* An automatic currency carries a badge (`auto · rule`, `auto · supplier`, …)
+  whose tooltip gives the backend's reason. An unresolved one shows the ranked
+  suggestions as one-click buttons; admins can turn the choice into an
+  organization rule, which also resolves the other waiting invoices. Rules are
+  managed under Administration → Currency Rules (`/admin/currency`).
+* The invoice workspace keeps the page viewer and the data panel in sync:
+  choosing a page (thumbnail or arrows) opens the invoice printed on it,
+  the header steps through the document's invoices, and the page is kept in
+  the URL (`/invoices/{id}?page=98`). The previous invoice stays on screen
+  until the next one loads (neighbours are prefetched), actions are disabled
+  meanwhile, and unsaved edits are never left by switching.
+* The review queue shows uploads while they are processed (stage, page
+  progress, elapsed time) from `GET /jobs/active`, polling every 2 s while
+  something runs; when a document finishes, the queue refreshes so its
+  invoices appear at once.
 * Corrections, approvals and rejections send `expected_version`; a
   `409 VERSION_CONFLICT` opens a side-by-side diff instead of overwriting.
 * Uploads and comparisons send an `Idempotency-Key`, so retries and double
   clicks never create duplicates.
+* Every API call takes its response type from the backend's OpenAPI schema:
+  `apiClient.get<Res<"GET /documents/{document_id}/jobs">>(…)`
+  (`lib/api/typed.ts`). After `make api-types`, a call that assumes the wrong
+  shape (a list where the API returns a page) fails `tsc`. Paged endpoints are
+  read in full with `fetchAllPages` (`lib/api/pages.ts`) where the whole list
+  is needed.
+* Comparison results load only after the run finishes (the detail polls
+  every 1.5 s until then), one card per invoice with the fields that differ;
+  a card loads its field rows on demand (`record_position`), so large
+  reconciliations stay fast.
 * Query keys are centralised (`lib/api/keys.ts`) and every mutation
   invalidates exactly the affected keys (`lib/api/invalidation.ts`).
 

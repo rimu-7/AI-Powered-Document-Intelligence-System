@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
+  Coins,
   FileText,
   FileCheck,
   GitCompare,
@@ -112,6 +113,14 @@ export function CommandMenu() {
                 >
                   <Users className="mr-2 h-4 w-4" />
                   <span>Users & Permissions</span>
+                </CommandItem>
+                <CommandItem
+                  onSelect={() =>
+                    runCommand(() => router.push("/admin/currency"))
+                  }
+                >
+                  <Coins className="mr-2 h-4 w-4" />
+                  <span>Currency Rules</span>
                 </CommandItem>
                 <CommandItem
                   onSelect={() =>

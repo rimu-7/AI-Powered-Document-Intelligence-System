@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client"
+import type { Res } from "@/lib/api/typed"
 import type { components } from "@/lib/api/schema"
 import type { CurrencyCode } from "@/lib/api/types"
 
@@ -26,19 +27,22 @@ export const searchApi = {
     limit = 50,
     offset = 0
   ): Promise<SearchResponse> {
-    const res = await apiClient.get<SearchResponse>("/search/keyword", {
-      params: {
-        q: query,
-        limit,
-        offset,
-        ...filters,
-      },
-    })
+    const res = await apiClient.get<Res<"GET /search/keyword">>(
+      "/search/keyword",
+      {
+        params: {
+          q: query,
+          limit,
+          offset,
+          ...filters,
+        },
+      }
+    )
     return res.data
   },
 
   async semantic(payload: SearchRequest): Promise<SearchResponse> {
-    const res = await apiClient.post<SearchResponse>(
+    const res = await apiClient.post<Res<"POST /search/semantic">>(
       "/search/semantic",
       payload
     )
@@ -46,7 +50,10 @@ export const searchApi = {
   },
 
   async hybrid(payload: SearchRequest): Promise<SearchResponse> {
-    const res = await apiClient.post<SearchResponse>("/search/hybrid", payload)
+    const res = await apiClient.post<Res<"POST /search/hybrid">>(
+      "/search/hybrid",
+      payload
+    )
     return res.data
   },
 }

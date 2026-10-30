@@ -92,10 +92,35 @@ work units and reaches 100% only at a successful end state.
   symbols (`$`, `¥`) are **flagged, never guessed**.
 * Currency is the `CurrencyCode` enum (55 ISO 4217 codes, `backend/app/shared/enums.py`)
   everywhere: extraction output, the `invoice_records.currency` CHECK constraint,
-  corrections, search filters, comparison options and the API schema. A bare
-  `$` with no country evidence stays `null` with `currency_raw: "$"` and an
-  `INVALID_CURRENCY` warning listing the candidate codes; it is never defaulted.
+  corrections, search filters, comparison options and the API schema.
   Adding a code means adding its minor units and a migration for the constraint.
+* **Currency resolution** (`extraction/currency_resolution.py`, pure, and
+  `currency_policy.py`, database). When the invoice does not print one
+  unambiguous currency, evidence is tried strongest first and the first step
+  with exactly one answer wins:
+  1. `PRINTED`: an ISO code or a single-currency symbol (€, £, ₹).
+  2. `DOCUMENT_CONTEXT`: the supplier's country from its grounded address
+     ("CA 94107" → USD, "Germany" → EUR); for an ambiguous symbol also phone
+     prefixes (+61), country domains (.com.au) and tax-ID labels (ABN, GSTIN),
+     which must all agree. `+1` and `.com` are not evidence.
+  3. `SUPPLIER_HISTORY`: the supplier's earlier invoices (same normalized name
+     or tax ID) whose currency was printed or set by a reviewer. A supplier
+     billing in several currencies decides nothing.
+  4. `ORGANIZATION_RULE`: an admin rule such as `$` → USD.
+  5. `LEARNED`: reviewers resolved the symbol the same way at least twice and
+     never differently.
+  6. `ORGANIZATION_DEFAULT`: the organization's default currency.
+
+  No step overrides what is printed: `$` can become USD, CAD, AUD… but never
+  EUR, so a euro default cannot turn a dollar invoice into euros. Only printed
+  or reviewer-set currencies feed steps 3 and 5, so an automatic choice never
+  reinforces itself. Each decision is stored as `invoice_records.currency_source`,
+  marked `DERIVED` with its reason in the evidence, and reported as a
+  non-blocking `CURRENCY_INFERRED` note. If nothing decides, the currency stays
+  `null` with an `INVALID_CURRENCY` warning and the candidates ranked by the
+  evidence seen, so a reviewer confirms the most likely one in one click.
+  Changing the policy (`PUT /organization/currency-settings`) can resolve and
+  revalidate every invoice still waiting for a currency.
 * **Grounding**: each value must be found on the cited page; the matching line
   and its bounding box become the evidence. Values that cannot be found are
   marked `UNSUPPORTED` and raise `UNGROUNDED_VALUE`.
@@ -128,7 +153,7 @@ document) · `TOTAL_MISMATCH` (subtotal − discount + shipping + tax) ·
 `NEGATIVE_AMOUNT` (credit-note aware) · `DUPLICATE_INVOICE` (same supplier +
 number in another document) · `DUPLICATE_FILE` (SHA-256) ·
 `UNGROUNDED_VALUE` · `AMBIGUOUS_VALUE` · `LOW_EXTRACTION_CONFIDENCE` ·
-`UNSUPPORTED_CALCULATION` · `CURRENCY_INFERRED` (INFO: `$`/`¥`/`kr` resolved from the supplier's printed address, e.g. "CA 94107" → USD; never without that evidence) · `PDF_REPAIRED` (damaged PDF recovered, content
+`UNSUPPORTED_CALCULATION` · `CURRENCY_INFERRED` (INFO: currency decided automatically, with the reason; see *Currency resolution*) · `PDF_REPAIRED` (damaged PDF recovered, content
 may be incomplete) · `EXTRACTION_FALLBACK` · `EXTRACTOR_DISAGREEMENT`.
 Absolute tolerance (0.01), never percentages. Any
 ERROR, or a review-relevant warning, sets the invoice to `REQUIRES_REVIEW` and

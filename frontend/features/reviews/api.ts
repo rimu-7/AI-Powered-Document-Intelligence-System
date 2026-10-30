@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client"
+import type { Res } from "@/lib/api/typed"
 import type { components } from "@/lib/api/schema"
 
 export type ReviewQueueItem = components["schemas"]["ReviewQueueItem"]
@@ -17,14 +18,19 @@ export interface ReviewQueueParams {
 
 export const reviewsApi = {
   async queue(params?: ReviewQueueParams): Promise<Page_ReviewQueueItem_> {
-    const res = await apiClient.get<Page_ReviewQueueItem_>("/reviews/queue", {
-      params,
-    })
+    const res = await apiClient.get<Res<"GET /reviews/queue">>(
+      "/reviews/queue",
+      {
+        params,
+      }
+    )
     return res.data
   },
 
   async get(id: string): Promise<ReviewTaskOut> {
-    const res = await apiClient.get<ReviewTaskOut>(`/reviews/${id}`)
+    const res = await apiClient.get<Res<"GET /reviews/{review_id}">>(
+      `/reviews/${id}`
+    )
     return res.data
   },
 

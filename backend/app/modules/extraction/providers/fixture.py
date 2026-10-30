@@ -94,6 +94,11 @@ def _is_title(cell: str) -> bool:
     return any(letters == t or (len(t) >= 6 and SequenceMatcher(None, letters, t).ratio() >= 0.85) for t in _DOCUMENT_TITLES)
 
 
+def _is_table_header(text: str) -> bool:
+    """A line-item table header such as "Item Description  Quantity  Unit Price  Total"."""
+    return bool(_ITEM_HEADER_RE.search(text) and (_QTY_HEADER_RE.search(text) or _PRICE_HEADER_RE.search(text)))
+
+
 def _is_address_part(cell: str) -> bool:
     return bool(
         cell
@@ -236,7 +241,10 @@ class LocalRulesProvider:
         # Letterhead fallback for the supplier: first meaningful cell of the segment,
         # skipping the document title ("INVOICE" may sit left of the supplier block).
         if "supplier_name" not in found:
+            customer = {v.value.strip() for k in ("customer_name",) if (v := found.get(k)) and v.value}
             for line_idx, line in enumerate(lines[:8]):
+                if _is_table_header(line.text):
+                    break  # the letterhead is above the item table, never in it
                 if _URL_RE.search(line.text):
                     continue  # "Invoice Print   https://..." header added by the browser
                 pick = next(
@@ -249,6 +257,7 @@ class LocalRulesProvider:
                         and not _REFERENCE_RE.match(cell)
                         and not any(p.search(cell) for _, p in _LABELS)
                         and not _amount_tokens(cell)
+                        and cell.strip() not in customer  # the "Bill To" block is the customer
                     ),
                     None,
                 )
